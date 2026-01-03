@@ -1,0 +1,85 @@
+<?php
+
+use App\Http\Controllers\ProfileController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'services' => App\Models\Service::with('packages')->get(),
+        'whatsapp_number' => App\Models\Setting::where('key', 'whatsapp_number')->value('value'),
+    ]);
+});
+
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+    $orders = [];
+
+    if ($user->role === 'customer') {
+        $orders = App\Models\Order::with(['package.service', 'joki', 'review'])
+            ->where('user_id', $user->id)
+            ->latest()
+            ->get();
+    } elseif ($user->role === 'joki') {
+        return app(App\Http\Controllers\JokiDashboardController::class)->index();
+    } elseif ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    return Inertia::render('Dashboard', [
+        'orders' => $orders,
+        'stats' => [
+            'total_orders' => $orders->count(),
+            'active_orders' => $orders->whereIn('status', ['pending', 'paid', 'in_progress', 'revision'])->count(),
+            'completed_orders' => $orders->where('status', 'completed')->count(),
+            'pending_payment_orders' => $orders->where('status', 'pending')->count(),
+        ]
+    ]);
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+// Admin Routes
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('dashboard');
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+
+    // Order Management
+    Route::get('/orders/verify', [App\Http\Controllers\Admin\AdminOrderController::class, 'verify'])->name('orders.verify');
+    Route::post('/orders/{order}/approve', [App\Http\Controllers\Admin\AdminOrderController::class, 'approvePayment'])->name('orders.approve');
+
+    Route::get('/orders/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'assign'])->name('orders.assign');
+    Route::post('/orders/{order}/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'storeAssignment'])->name('orders.store_assignment');
+
+    // Service Management
+    Route::resource('services', App\Http\Controllers\Admin\AdminServiceController::class);
+
+    // Package Management (Nested & Direct)
+    Route::post('/services/{service}/packages', [App\Http\Controllers\Admin\AdminPackageController::class, 'store'])->name('services.packages.store');
+    Route::put('/packages/{package}', [App\Http\Controllers\Admin\AdminPackageController::class, 'update'])->name('packages.update');
+    Route::delete('/packages/{package}', [App\Http\Controllers\Admin\AdminPackageController::class, 'destroy'])->name('packages.destroy');
+
+    // Transaction Report
+    Route::get('/transactions', [App\Http\Controllers\Admin\AdminTransactionController::class, 'index'])->name('transactions.index');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/orders/create', [App\Http\Controllers\OrderController::class, 'create'])->name('orders.create');
+    Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{order}', [App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
+    Route::get('/orders/{order}/invoice', [App\Http\Controllers\OrderController::class, 'downloadInvoice'])->name('orders.invoice');
+    Route::post('/orders/{order}/cancel', [App\Http\Controllers\OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}', [App\Http\Controllers\OrderController::class, 'update'])->name('orders.update');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Joki Task Actions
+    Route::post('/joki/orders/{order}/start', [App\Http\Controllers\JokiDashboardController::class, 'startTask'])->name('joki.orders.start');
+    Route::post('/joki/orders/{order}/upload', [App\Http\Controllers\JokiDashboardController::class, 'uploadResult'])->name('joki.orders.upload');
+    Route::post('/joki/orders/{order}/link', [App\Http\Controllers\JokiDashboardController::class, 'updateLink'])->name('joki.orders.link');
+});
+
+require __DIR__ . '/auth.php';
