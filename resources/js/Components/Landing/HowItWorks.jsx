@@ -63,28 +63,27 @@ export default function HowItWorks() {
     ];
 
     return (
-        <section id="how-it-works" className="py-24 bg-slate-900 border-t border-white/5 relative overflow-hidden">
-            {/* Decorative Background */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+        <section id="how-it-works" className="py-24 relative overflow-hidden bg-white border-y-2 border-slate-900">
+            {/* Geometric Pattern Background */}
+            <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">Cara Kerja Beresin</h2>
-                    <p className="text-slate-400 max-w-2xl mx-auto">Proses pemesanan yang simpel, transparan, dan terstruktur demi kenyamanan Anda.</p>
+                    <h2 className="text-3xl lg:text-4xl font-black mb-4 text-slate-900 border-b-8 border-yellow-400 inline-block px-4">Cara Kerja Beresin</h2>
+                    <p className="text-slate-600 max-w-2xl mx-auto mt-6 text-lg">Proses pemesanan yang simpel, transparan, dan terstruktur demi kenyamanan Anda.</p>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {steps.map((step) => (
-                        <div key={step.id} className="relative p-6 bg-slate-800/50 rounded-2xl border border-white/5 hover:border-indigo-500/50 transition duration-300 group">
-                            <div className="absolute -top-4 -left-4 w-12 h-12 bg-slate-900 rounded-full border border-white/10 flex items-center justify-center font-bold text-xl text-indigo-500 shadow-lg z-20">
+                        <div key={step.id} className="relative p-8 bg-[#F3F3F1] rounded-[2rem] border-2 border-slate-900 hover:bg-yellow-50 transition duration-300 group">
+                            <div className="absolute -top-6 -left-6 w-14 h-14 bg-slate-900 rounded-2xl border-2 border-white flex items-center justify-center font-bold text-2xl text-white shadow-lg z-20 transform -rotate-6 group-hover:rotate-0 transition duration-300">
                                 {step.id}
                             </div>
-                            <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-4 text-indigo-400 group-hover:scale-110 transition duration-300">
+                            <div className="w-16 h-16 bg-white rounded-2xl border-2 border-slate-900 flex items-center justify-center mb-6 text-slate-900 group-hover:scale-110 transition duration-300">
                                 {step.icon}
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed">{step.description}</p>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                            <p className="text-slate-500 text-sm leading-relaxed">{step.description}</p>
                         </div>
                     ))}
                 </div>

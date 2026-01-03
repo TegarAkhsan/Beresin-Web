@@ -39,24 +39,28 @@ export default function Features() {
     ];
 
     return (
-        <section className="py-24 bg-slate-900 border-t border-white/5">
+        <section className="py-24 relative z-10">
             <div className="max-w-7xl mx-auto px-6">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">Keunggulan Beresin</h2>
-                    <p className="text-slate-400">Kenapa memilih kami sebagai partner digital Anda?</p>
+                <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+                    <div>
+                        <span className="text-yellow-600 font-bold uppercase tracking-wider text-sm mb-2 block">Why Choose Us</span>
+                        <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight">Keunggulan<br />Beresin.</h2>
+                    </div>
+                    <p className="text-slate-600 max-w-lg text-lg">
+                        Kami tidak hanya sekedar mengerjakan tugas, tapi memberikan solusi terbaik dengan standar profesional.
+                    </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {features.map((item, index) => (
                         <div key={index}
-                            className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10 text-center hover:border-indigo-500/50 transition duration-300 shadow-xl shadow-indigo-500/5 animate-float"
-                            style={{ animationDelay: `${index * 0.2}s` }}
+                            className="bg-white p-8 rounded-3xl border-2 border-slate-900 hover:shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] hover:-translate-y-2 transition-all duration-300 flex flex-col items-start group"
                         >
-                            <div className="w-14 h-14 mx-auto bg-indigo-600 rounded-full flex items-center justify-center mb-4 text-white shadow-lg shadow-indigo-600/30">
+                            <div className="w-14 h-14 bg-yellow-400 rounded-2xl border-2 border-slate-900 flex items-center justify-center mb-6 text-slate-900 group-hover:rotate-12 transition-transform">
                                 {item.icon}
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-                            <p className="text-slate-300 text-sm">{item.desc}</p>
+                            <h3 className="text-xl font-bold text-slate-900 mb-3">{item.title}</h3>
+                            <p className="text-slate-500 leading-relaxed">{item.desc}</p>
                         </div>
                     ))}
                 </div>

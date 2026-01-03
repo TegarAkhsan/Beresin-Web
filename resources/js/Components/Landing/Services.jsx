@@ -16,81 +16,103 @@ export default function Services({ services, auth }) {
 
     return (
         <>
-            <section id="services" className="py-24 bg-slate-800/50 relative z-10">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">Layanan Unggulan Kami</h2>
-                        <p className="text-slate-400">Pilih kategori layanan sesuai kebutuhan project Anda</p>
-                    </div>
+            <section id="services" className="py-24 relative z-10 px-6">
+                <div className="max-w-7xl mx-auto">
+                    {/* Main Container */}
+                    <div className="border-2 border-slate-900 rounded-[3rem] bg-[#FAFAFA] p-8 md:p-16 relative overflow-hidden">
 
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {services.map((service) => (
-                            <div key={service.id} className="group relative bg-slate-900 border border-white/5 rounded-2xl p-8 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col h-full">
-                                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition rounded-2xl"></div>
-                                <div className="relative z-10 flex flex-col h-full">
-                                    <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-6 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition">
-                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                        </svg>
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 relative z-10">
+                            <div>
+                                <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">Our Services</h2>
+                                <p className="text-slate-600 max-w-md text-lg">
+                                    Choose the best service that fits your project needs. High quality work, guaranteed.
+                                </p>
+                            </div>
+                            <div className="hidden md:block">
+                                <svg width="100" height="40" viewBox="0 0 100 40" className="text-slate-900">
+                                    <path d="M0 20 Q 25 40 50 20 T 100 20" fill="none" stroke="currentColor" strokeWidth="4" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
+                            {services.map((service, index) => (
+                                <div
+                                    key={service.id}
+                                    className={`
+                                        group relative rounded-3xl border-2 border-slate-900 p-8 flex flex-col h-full transition-all duration-300
+                                        ${index === 1 ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 hover:bg-yellow-50'}
+                                        hover:-translate-y-2 hover:shadow-[8px_8px_0px_0px_rgba(15,23,42,1)]
+                                    `}
+                                >
+                                    <div className="mb-6 flex justify-between items-start">
+                                        <div className={`p-3 rounded-2xl border-2 border-current ${index === 1 ? 'bg-white/10' : 'bg-slate-100'}`}>
+                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                            </svg>
+                                        </div>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-current transition-transform group-hover:rotate-45`}>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                                        </div>
                                     </div>
-                                    <h3 className="text-2xl font-bold mb-3 text-white">{service.name}</h3>
-                                    <p className="text-slate-400 mb-6">{service.description}</p>
 
-                                    <div className="space-y-3 mb-8 flex-1">
-                                        {service.packages.map(pkg => (
-                                            <div key={pkg.id} className={`flex justify-between items-center text-sm p-3 rounded-lg border ${pkg.price == 0 ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/5 border-white/5'}`}>
-                                                <span className={`${pkg.price == 0 ? 'text-emerald-300 font-medium' : 'text-slate-300'}`}>{pkg.name}</span>
-                                                <span className="font-semibold text-emerald-400">
-                                                    {Number(pkg.price) > 0
-                                                        ? `Rp ${new Intl.NumberFormat('id-ID').format(pkg.price)}`
-                                                        : 'Negotiable'}
-                                                </span>
+                                    <h3 className="text-2xl font-bold mb-3">{service.name}</h3>
+                                    <p className={`mb-8 flex-1 ${index === 1 ? 'text-slate-400' : 'text-slate-500'}`}>{service.description}</p>
+
+                                    <div className="space-y-3 mb-8">
+                                        {service.packages.slice(0, 3).map(pkg => (
+                                            <div key={pkg.id} className={`flex justify-between items-center text-sm p-3 rounded-xl border-2 ${index === 1 ? 'border-white/20 bg-white/5' : 'border-slate-100 bg-slate-50'}`}>
+                                                <span className="font-bold">{pkg.name}</span>
                                             </div>
                                         ))}
                                     </div>
 
                                     <button
                                         onClick={() => setSelectedService(service)}
-                                        className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition font-semibold text-white shadow-lg shadow-indigo-500/20"
+                                        className={`w-full py-4 rounded-xl font-bold border-2 border-slate-900 transition-all active:scale-95
+                                            ${index === 1
+                                                ? 'bg-white text-slate-900 hover:bg-yellow-400'
+                                                : 'bg-slate-900 text-white hover:bg-slate-800'}
+                                        `}
                                     >
-                                        Pilih Layanan
+                                        View Details
                                     </button>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Service Detail Modal (Package Selection) */}
+            {/* Service Detail Modal (Package Selection) - Updated to Light Theme */}
             {selectedService && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedService(null)}></div>
-                    <div className="relative bg-slate-900 border border-white/10 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-fade-in-up overflow-hidden">
-                        <div className="p-8 border-b border-white/5 flex justify-between items-start bg-slate-900 z-20">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setSelectedService(null)}></div>
+                    <div className="relative bg-white border-2 border-slate-900 rounded-[2rem] max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in-up">
+                        <div className="p-8 border-b-2 border-slate-100 flex justify-between items-start bg-white z-20">
                             <div>
-                                <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 mb-2">{selectedService.name}</h3>
-                                <p className="text-slate-400">Pilih paket yang sesuai dengan kebutuhan Anda</p>
+                                <h3 className="text-3xl font-black text-slate-900 mb-2">{selectedService.name}</h3>
+                                <p className="text-slate-500">Pilih paket yang sesuai dengan kebutuhan Anda</p>
                             </div>
-                            <button onClick={() => setSelectedService(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition">
+                            <button onClick={() => setSelectedService(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-900 transition border-2 border-transparent hover:border-slate-200">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
-                        <div className="overflow-y-auto p-8 custom-scrollbar">
+                        <div className="overflow-y-auto p-8 custom-scrollbar bg-[#FAFAFA]">
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {selectedService.packages.map(pkg => (
-                                    <div key={pkg.id} className="flex flex-col bg-slate-800/50 rounded-2xl border border-white/10 p-6 hover:border-indigo-500/50 transition duration-300 relative group">
+                                {selectedService.packages.map((pkg, idx) => (
+                                    <div key={pkg.id} className="flex flex-col bg-white rounded-2xl border-2 border-slate-200 p-6 hover:border-slate-900 hover:shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] transition-all duration-300 relative group">
                                         <div className="mb-6">
-                                            <h4 className="text-xl font-bold text-white mb-2">{pkg.name}</h4>
-                                            <p className="text-3xl font-bold text-emerald-400">
-                                                {Number(pkg.price) > 0 ? `Rp ${new Intl.NumberFormat('id-ID').format(pkg.price)}` : 'Negotiable'}
+                                            <h4 className="text-xl font-bold text-slate-900 mb-2">{pkg.name}</h4>
+                                            <p className="text-3xl font-black text-slate-900">
+                                                {Number(pkg.price) > 0 ? `Rp ${new Intl.NumberFormat('id-ID', { notation: "compact", compactDisplay: "short" }).format(pkg.price)}` : 'Negotiable'}
                                             </p>
                                         </div>
                                         <div className="flex-1 mb-8">
                                             <ul className="space-y-3">
-                                                {(Array.isArray(pkg.features) ? pkg.features : JSON.parse(pkg.features || '[]')).map((feature, idx) => (
-                                                    <li key={idx} className="flex items-start text-sm text-slate-300">
-                                                        <svg className="w-5 h-5 text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                                                {(Array.isArray(pkg.features) ? pkg.features : JSON.parse(pkg.features || '[]')).map((feature, i) => (
+                                                    <li key={i} className="flex items-start text-sm text-slate-600">
+                                                        <svg className="w-5 h-5 text-green-500 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                                                         {feature}
                                                     </li>
                                                 ))}
@@ -98,7 +120,7 @@ export default function Services({ services, auth }) {
                                         </div>
                                         <button
                                             onClick={() => handleSelectPackage(pkg)}
-                                            className="block w-full text-center py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-500/20"
+                                            className="block w-full text-center py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition border-2 border-transparent"
                                         >
                                             Pilih Paket Ini
                                         </button>

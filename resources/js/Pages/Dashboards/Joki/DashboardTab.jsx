@@ -1,123 +1,136 @@
-import CountdownTimer from '@/Components/CountdownTimer';
-import PrimaryButton from '@/Components/PrimaryButton';
-import SecondaryButton from '@/Components/SecondaryButton';
+import { Link } from '@inertiajs/react';
 
-export default function DashboardTab({ user, stats, activeTasks, openDetailModal, openUploadModal }) {
-    // Workload Colors
-    const getWorkloadColor = (status) => {
-        switch (status) {
-            case 'Green': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-            case 'Yellow': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'Red': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800';
-        }
+const StatCard = ({ title, value, subtitle, icon, color }) => {
+    const colorClasses = {
+        emerald: 'bg-emerald-50 text-emerald-600',
+        blue: 'bg-blue-50 text-blue-600',
+        amber: 'bg-amber-50 text-amber-600',
+        purple: 'bg-purple-50 text-purple-600',
+        indigo: 'bg-indigo-50 text-indigo-600'
     };
 
     return (
-        <div className="animate-fade-in-up">
-            <h2 className="text-2xl font-black text-gray-800 mb-8 tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h2>
-
-            {/* 1. Workload Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                <div className={`p-6 rounded-2xl border ${getWorkloadColor(stats.workload_status)} shadow-sm relative overflow-hidden`}>
-                    <div className="relative z-10">
-                        <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Workload</h3>
-                        <p className="text-2xl font-black">{stats.workload_status}</p>
-                    </div>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-full">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="text-gray-500 text-sm font-semibold tracking-wide uppercase">{title}</h3>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
                 </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Rating</h3>
-                    <p className="text-3xl font-bold text-gray-900">★ {stats.avg_rating}</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">On-Time</h3>
-                    <p className="text-3xl font-bold text-gray-900">{stats.on_time_rate}%</p>
-                </div>
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Completed</h3>
-                    <p className="text-3xl font-bold text-gray-900">{stats.total_completed} <span className="text-sm font-normal text-gray-400">tasks</span></p>
+                <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+                    {icon}
                 </div>
             </div>
+            <p className="text-sm font-medium text-gray-400">{subtitle}</p>
+        </div>
+    );
+};
 
-            {/* 2. Active Workspace */}
-            <div>
-                <div className="flex items-center gap-3 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800">Active Tasks</h3>
-                    <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">{activeTasks.length}</span>
+export default function DashboardTab({ user, stats, activeTasks, openDetailModal, openUploadModal, CountdownTimer }) {
+    return (
+        <div className="space-y-8 animate-fade-in-up">
+            <header>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight mb-2">Dashboard</h1>
+                <p className="text-lg text-gray-500">
+                    Welcome back, <span className="text-gray-900 font-semibold">{user.name}</span>!
+                </p>
+            </header>
+
+            {/* Workload Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Workload"
+                    value={stats.workload_status}
+                    subtitle="Current Status"
+                    color="indigo"
+                    icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>}
+                />
+                <StatCard
+                    title="Rating"
+                    value={`★ ${stats.avg_rating}`}
+                    subtitle="Average Rating"
+                    color="amber"
+                    icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>}
+                />
+                <StatCard
+                    title="On-Time"
+                    value={`${stats.on_time_rate}%`}
+                    subtitle="Completion Rate"
+                    color="emerald"
+                    icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
+                />
+                <StatCard
+                    title="Completed"
+                    value={stats.total_completed}
+                    subtitle="Total Tasks"
+                    color="blue"
+                    icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
+                />
+            </div>
+
+            {/* Active Tasks List */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center">
+                    <h2 className="text-xl font-bold text-gray-900">Active Tasks</h2>
+                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full">
+                        {activeTasks.length} Pending
+                    </span>
                 </div>
 
-                <div className="space-y-6">
-                    {activeTasks.map(task => (
-                        <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
-                            <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide">
+                <div className="divide-y divide-gray-50">
+                    {activeTasks.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <div className="inline-block p-4 rounded-full bg-gray-50 mb-4 text-2xl">⚡</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Available for work!</h3>
+                            <p className="text-gray-500">You have no active tasks at the moment.</p>
+                        </div>
+                    ) : (
+                        activeTasks.map(task => (
+                            <div key={task.id} className="p-6 hover:bg-gray-50 transition-colors flex flex-col md:flex-row gap-6">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-600">
                                             #{task.order_number}
                                         </span>
-                                        <span className="text-sm text-gray-500 font-medium">{task.package?.service?.name}</span>
+                                        <span className="text-sm text-indigo-600 font-medium">
+                                            {task.package?.service?.name}
+                                        </span>
                                     </div>
-
-                                    <h4 className="text-2xl font-bold text-gray-900 mb-2 truncate leading-tight">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">
                                         {task.package?.name}
-                                    </h4>
+                                    </h3>
+                                    <p className="text-sm text-gray-500 line-clamp-1 mb-4">
+                                        Client: {task.user?.name}
+                                    </p>
 
-                                    <p className="text-gray-500 line-clamp-2 mb-6 text-sm">{task.description}</p>
-
-                                    {/* Inline Detail Summary */}
-                                    <div className="flex items-center gap-6 mb-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                                            <span className="font-semibold">{task.user?.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                            <span>{task.user?.email}</span>
-                                        </div>
+                                    <div className="flex items-center gap-4">
                                         <button
                                             onClick={() => openDetailModal(task)}
-                                            className="ml-auto text-indigo-600 font-bold text-xs hover:underline"
+                                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
                                         >
-                                            View Full Details
+                                            View Details
+                                        </button>
+                                        <span className="text-gray-300">|</span>
+                                        <button
+                                            onClick={() => openUploadModal(task)}
+                                            className="text-sm font-semibold text-gray-600 hover:text-gray-900 hover:underline"
+                                        >
+                                            Upload Result
                                         </button>
                                     </div>
-
-                                    {/* Files */}
-                                    {task.files?.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {task.files.map(file => (
-                                                <a href={`/storage/${file.file_path}`} target="_blank" key={file.id} className="group relative pr-8 pl-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-semibold text-gray-600 hover:border-indigo-300 transition-colors">
-                                                    📄 {file.version_label}
-                                                    <span className="absolute right-2 text-gray-300">⬇</span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
-
-                                <div className="md:w-72 flex flex-col gap-3 border-l border-gray-50 md:pl-8">
-                                    <div className="text-center mb-2">
-                                        <p className="text-xs text-gray-400 uppercase font-bold text-center mb-1">Deadline Countdown</p>
-                                        <CountdownTimer deadline={task.deadline} />
+                                <div className="flex flex-col items-end justify-center min-w-[150px]">
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Deadline</p>
+                                        {CountdownTimer && <CountdownTimer deadline={task.deadline} />}
                                     </div>
-                                    <div className="space-y-2 w-full">
-                                        <PrimaryButton onClick={() => openUploadModal(task)} className="w-full justify-center bg-indigo-600 hover:bg-indigo-700 py-3">
-                                            Sync / Upload
-                                        </PrimaryButton>
-                                        <SecondaryButton className="w-full justify-center py-3">
-                                            Open Chat
-                                        </SecondaryButton>
+                                    <div className="mt-3">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            In Progress
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                    {activeTasks.length === 0 && (
-                        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-                            <div className="inline-block p-4 rounded-full bg-gray-50 mb-4 text-2xl">⚡</div>
-                            <h3 className="text-lg font-bold text-gray-800">Available for work!</h3>
-                            <p className="text-gray-500 mb-6">You have no active tasks. Check the "New Tasks" tab.</p>
-                        </div>
+                        ))
                     )}
                 </div>
             </div>

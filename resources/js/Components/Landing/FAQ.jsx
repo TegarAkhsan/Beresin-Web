@@ -27,28 +27,28 @@ export default function FAQ() {
     };
 
     return (
-        <section id="faq" className="py-24 bg-slate-900 relative">
+        <section id="faq" className="py-24 bg-white relative z-10">
             <div className="max-w-3xl mx-auto px-6">
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-white">Frequently Asked Questions</h2>
-                    <p className="text-slate-400">Pertanyaan umum seputar layanan Beresin</p>
+                    <h2 className="text-3xl lg:text-4xl font-black mb-4 text-slate-900">Frequently Asked Questions</h2>
+                    <p className="text-slate-600">Pertanyaan umum seputar layanan Beresin</p>
                 </div>
 
                 <div className="space-y-4">
                     {faqData.map((item, index) => (
                         <div
                             key={index}
-                            className="bg-slate-800/50 rounded-2xl border border-white/5 overflow-hidden transition-all duration-300 hover:border-indigo-500/30"
+                            className="bg-[#FAFAFA] rounded-2xl border-2 border-slate-900 overflow-hidden transition-all duration-300 hover:shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]"
                         >
                             <button
                                 onClick={() => toggleFAQ(index)}
                                 className="w-full flex justify-between items-center p-6 text-left focus:outline-none"
                             >
-                                <span className={`text-lg font-bold transition-colors ${openIndex === index ? 'text-indigo-400' : 'text-slate-200'}`}>
+                                <span className={`text-lg font-bold transition-colors ${openIndex === index ? 'text-slate-900' : 'text-slate-700'}`}>
                                     {item.question}
                                 </span>
                                 <svg
-                                    className={`w-5 h-5 text-slate-400 transform transition-transform duration-300 ${openIndex === index ? 'rotate-180 text-indigo-400' : ''}`}
+                                    className={`w-6 h-6 text-slate-900 transform transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`}
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -58,7 +58,7 @@ export default function FAQ() {
                             </button>
 
                             <div
-                                className={`px-6 text-slate-400 transition-all duration-300 ease-in-out overflow-hidden ${openIndex === index ? 'max-h-48 pb-6 opacity-100' : 'max-h-0 opacity-0'
+                                className={`px-6 text-slate-600 transition-all duration-300 ease-in-out overflow-hidden ${openIndex === index ? 'max-h-48 pb-6 opacity-100' : 'max-h-0 opacity-0'
                                     }`}
                             >
                                 {item.answer}

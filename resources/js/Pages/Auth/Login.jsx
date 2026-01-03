@@ -74,34 +74,34 @@ export default function Login({ status, canResetPassword }) {
                                 setData('remember', e.target.checked)
                             }
                         />
-                        <span className="ms-2 text-sm text-gray-600">
-                            Remember me
+                        <span className="ms-3 text-sm font-bold text-slate-600">
+                            Ingat Saya
                         </span>
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <div className="mt-6 flex items-center justify-end">
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            className="rounded-md text-sm text-slate-500 font-bold underline decoration-2 decoration-slate-300 hover:text-slate-900 hover:decoration-yellow-400"
                         >
-                            Forgot your password?
+                            Lupa password?
                         </Link>
                     )}
 
                     <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
+                        Masuk
                     </PrimaryButton>
                 </div>
 
-                <div className="mt-6 text-center">
-                    <span className="text-sm text-gray-600">Don't have an account? </span>
+                <div className="mt-8 pt-6 border-t-2 border-slate-100 text-center">
+                    <span className="text-sm font-medium text-slate-500">Belum punya akun? </span>
                     <Link
                         href={route('register')}
-                        className="rounded-md text-sm text-indigo-600 hover:text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 font-bold"
+                        className="ml-1 text-sm font-black text-slate-900 underline decoration-2 decoration-yellow-400 hover:bg-yellow-400 hover:text-slate-900 px-1 rounded transition-all"
                     >
-                        Sign up
+                        Daftar Sekarang
                     </Link>
                 </div>
             </form>
