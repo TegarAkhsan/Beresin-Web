@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, Link } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import Modal from '@/Components/Modal';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -13,7 +13,21 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [previewTask, setPreviewTask] = useState(null);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar toggle
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Detailed Task View Modal
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [detailTask, setDetailTask] = useState(null);
+
+    const openDetailModal = (task) => {
+        setDetailTask(task);
+        setShowDetailModal(true);
+    };
+
+    const closeDetailModal = () => {
+        setDetailTask(null);
+        setShowDetailModal(false);
+    };
 
     // Workload Colors
     const getWorkloadColor = (status) => {
@@ -51,10 +65,10 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
             return () => clearTimeout(timer);
         });
 
-        if (timeLeft.expired) return <span className="text-red-600 font-bold">Overdue</span>;
+        if (timeLeft.expired) return <span className="text-red-500 font-bold text-xs uppercase">Expired</span>;
 
         return (
-            <span className="font-mono text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">
+            <span className="font-mono text-xl font-bold text-blue-600">
                 {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
             </span>
         );
@@ -84,12 +98,18 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     const { data, setData, post, processing, reset, errors } = useForm({
         file: null,
         version_label: 'Final v1',
-        external_link: ''
+        external_link: '',
+        note: ''
     });
 
     const openUploadModal = (order) => {
         setSelectedOrder(order);
-        setData('external_link', order.external_link || '');
+        setData({
+            file: null,
+            version_label: 'Final v1',
+            external_link: order.external_link || '',
+            note: ''
+        });
         setShowUploadModal(true);
     };
 
@@ -102,8 +122,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         e.preventDefault();
         post(route('joki.orders.upload', selectedOrder.id), {
             onSuccess: () => {
-                reset('file', 'version_label');
-                alert('File uploaded.');
+                reset('file', 'version_label', 'note');
+                alert('File uploaded successfully.');
+                closeUploadModal();
             }
         });
     };
@@ -118,9 +139,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     const MenuItem = ({ id, label, icon }) => (
         <button
             onClick={() => { setActiveTab(id); setIsSidebarOpen(false); }}
-            className={`w-full text-left px-6 py-3 mb-1 flex items-center transition-colors ${activeTab === id
-                    ? 'bg-indigo-50 border-r-4 border-indigo-600 text-indigo-700 font-bold'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+            className={`w-full text-left px-6 py-4 flex items-center transition-colors ${activeTab === id
+                ? 'bg-gray-100 border-r-4 border-indigo-600 text-indigo-700 font-bold'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
         >
             <span className="mr-3">{icon}</span>
@@ -129,126 +150,180 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     );
 
     return (
-        <AuthenticatedLayout user={auth.user}>
-            {/* Note: HEADER prop removed as requested */}
+        <AuthenticatedLayout user={auth.user} hideNavigation={true}>
             <Head title="Joki Dashboard" />
 
-            <div className="flex min-h-screen bg-gray-100">
+            <div className="flex min-h-screen bg-gray-50">
                 {/* SIDEBAR */}
-                <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                    <div className="flex items-center justify-center h-20 border-b border-gray-100">
-                        <h1 className="text-xl font-bold text-gray-800">Workspace</h1>
-                    </div>
-                    <nav className="mt-6">
-                        <div className="px-6 mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                            Main Menu
+                <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col justify-between`}>
+                    <div>
+                        <div className="flex items-center justify-center h-20 border-b border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">W</div>
+                                <h1 className="text-xl font-bold text-gray-800">Workspace</h1>
+                            </div>
                         </div>
-                        <MenuItem
-                            id="dashboard"
-                            label="Dashboard"
-                            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>}
-                        />
-                        <MenuItem
-                            id="tasks"
-                            label="My Tasks"
-                            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>}
-                        />
-                        <MenuItem
-                            id="earnings"
-                            label="Earnings"
-                            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
-                        />
-                    </nav>
+
+                        <nav className="mt-6 space-y-1">
+                            <div className="px-6 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                Menu
+                            </div>
+                            <MenuItem
+                                id="dashboard"
+                                label="Dashboard & Active"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>}
+                            />
+                            <MenuItem
+                                id="tasks"
+                                label="New Tasks"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>}
+                            />
+                            <MenuItem
+                                id="earnings"
+                                label="Earnings"
+                                icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>}
+                            />
+                        </nav>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 border-t border-gray-100">
+                        <div className="flex items-center min-w-0 gap-3 mb-4 p-2">
+
+                            <div className="rounded-full bg-indigo-100 p-2 text-indigo-600">
+                                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 truncate">{auth.user.name}</p>
+                                <p className="text-xs text-gray-400 truncate text-indigo-500 font-medium tracking-wide">JOKI PRO</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.post(route('logout'))}
+                            className="w-full text-center px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm flex items-center justify-center text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors text-sm font-bold"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                            Log Out
+                        </button>
+                    </div>
                 </aside>
 
                 {/* MAIN CONTENT */}
-                <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen bg-gray-50/50">
+                <main className="flex-1 overflow-y-auto h-screen bg-gray-50 p-6 md:p-10">
                     {/* Mobile Sidebar Toggle */}
-                    <div className="md:hidden flex items-center mb-6">
-                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-700">
+                    <div className="md:hidden flex items-center justify-between mb-8">
+                        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="text-gray-500 hover:text-gray-700 bg-white p-2 rounded shadow">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         </button>
-                        <span className="ml-4 font-bold text-gray-800">Workspace</span>
+                        <h1 className="font-bold text-gray-800">Workspace</h1>
+                        <div className="w-10"></div>
                     </div>
 
-                    <div className="max-w-5xl mx-auto">
+                    <div className="max-w-6xl mx-auto">
 
                         {activeTab === 'dashboard' && (
                             <div className="animate-fade-in-up">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6">Dashboard Overview</h2>
+                                <h2 className="text-2xl font-black text-gray-800 mb-8 tracking-tight">Welcome back, {auth.user.name.split(' ')[0]}!</h2>
 
                                 {/* 1. Workload Stats */}
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                                    <div className={`p-6 rounded-xl border ${getWorkloadColor(stats.workload_status)} shadow-sm`}>
-                                        <h3 className="text-sm font-bold uppercase tracking-wide opacity-80">Load Status</h3>
-                                        <p className="text-3xl font-black mt-2">{stats.workload_status}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+                                    <div className={`p-6 rounded-2xl border ${getWorkloadColor(stats.workload_status)} shadow-sm relative overflow-hidden`}>
+                                        <div className="relative z-10">
+                                            <h3 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-2">Workload</h3>
+                                            <p className="text-2xl font-black">{stats.workload_status}</p>
+                                        </div>
                                     </div>
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                                        <h3 className="text-gray-400 text-xs font-bold uppercase">Rating</h3>
-                                        <p className="text-3xl font-bold text-gray-800">★ {stats.avg_rating}</p>
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                                        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Rating</h3>
+                                        <p className="text-3xl font-bold text-gray-900">★ {stats.avg_rating}</p>
                                     </div>
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                                        <h3 className="text-gray-400 text-xs font-bold uppercase">On-Time</h3>
-                                        <p className="text-3xl font-bold text-gray-800">{stats.on_time_rate}%</p>
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                                        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">On-Time</h3>
+                                        <p className="text-3xl font-bold text-gray-900">{stats.on_time_rate}%</p>
                                     </div>
-                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                                        <h3 className="text-gray-400 text-xs font-bold uppercase">Completed</h3>
-                                        <p className="text-3xl font-bold text-gray-800">{stats.total_completed}</p>
+                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center">
+                                        <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wide mb-1">Completed</h3>
+                                        <p className="text-3xl font-bold text-gray-900">{stats.total_completed} <span className="text-sm font-normal text-gray-400">tasks</span></p>
                                     </div>
                                 </div>
 
                                 {/* 2. Active Workspace */}
                                 <div>
-                                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                                        Active Workspace
-                                        <span className="ml-2 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs">{activeTasks.length}</span>
-                                    </h3>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <h3 className="text-xl font-bold text-gray-800">Active Tasks</h3>
+                                        <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">{activeTasks.length}</span>
+                                    </div>
+
                                     <div className="space-y-6">
                                         {activeTasks.map(task => (
-                                            <div key={task.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
-                                                <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                                                <div className="flex flex-col md:flex-row justify-between md:items-start gap-4">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">#{task.order_number}</span>
-                                                            <span className="text-xs text-gray-400">{task.package?.service?.name}</span>
-                                                        </div>
-                                                        <h4 className="text-xl font-bold text-gray-900 mb-2">{task.package?.name}</h4>
-                                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
-                                                            <p className="text-sm text-gray-600 leading-relaxed font-medium">{task.description}</p>
+                                            <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow">
+                                                <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-3 mb-4">
+                                                            <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold text-xs uppercase tracking-wide">
+                                                                #{task.order_number}
+                                                            </span>
+                                                            <span className="text-sm text-gray-500 font-medium">{task.package?.service?.name}</span>
                                                         </div>
 
-                                                        {/* File Versions */}
+                                                        <h4 className="text-2xl font-bold text-gray-900 mb-2 truncate leading-tight">
+                                                            {task.package?.name}
+                                                        </h4>
+
+                                                        <p className="text-gray-500 line-clamp-2 mb-6 text-sm">{task.description}</p>
+
+                                                        {/* Inline Detail Summary */}
+                                                        <div className="flex items-center gap-6 mb-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl">
+                                                            <div className="flex items-center gap-2">
+                                                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                                                <span className="font-semibold">{task.user?.name}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                                                <span>{task.user?.email}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => openDetailModal(task)}
+                                                                className="ml-auto text-indigo-600 font-bold text-xs hover:underline"
+                                                            >
+                                                                View Full Details
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Files */}
                                                         {task.files?.length > 0 && (
-                                                            <div className="flex gap-2 flex-wrap">
+                                                            <div className="flex flex-wrap gap-2">
                                                                 {task.files.map(file => (
-                                                                    <a href={`/storage/${file.file_path}`} target="_blank" key={file.id} className="text-xs flex items-center gap-1 bg-white border border-gray-200 px-3 py-1.5 rounded-full text-indigo-600 hover:border-indigo-300 transition">
-                                                                        <span className="opacity-50">📎</span> {file.version_label}
+                                                                    <a href={`/storage/${file.file_path}`} target="_blank" key={file.id} className="group relative pr-8 pl-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-semibold text-gray-600 hover:border-indigo-300 transition-colors">
+                                                                        📄 {file.version_label}
+                                                                        <span className="absolute right-2 text-gray-300">⬇</span>
                                                                     </a>
                                                                 ))}
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="md:w-64 flex flex-col gap-3">
-                                                        <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100 text-center">
-                                                            <p className="text-xs text-blue-400 font-bold uppercase mb-1">Time Left</p>
-                                                            <div className="text-2xl font-mono text-blue-700">
-                                                                <CountdownTimer deadline={task.deadline} />
-                                                            </div>
+                                                    <div className="md:w-72 flex flex-col gap-3 border-l border-gray-50 md:pl-8">
+                                                        <div className="text-center mb-2">
+                                                            <p className="text-xs text-gray-400 uppercase font-bold text-center mb-1">Deadline Countdown</p>
+                                                            <CountdownTimer deadline={task.deadline} />
                                                         </div>
-                                                        <PrimaryButton onClick={() => openUploadModal(task)} className="justify-center w-full bg-indigo-600">
-                                                            Sync / Upload
-                                                        </PrimaryButton>
-                                                        <SecondaryButton className="justify-center w-full">Open Chat</SecondaryButton>
+                                                        <div className="space-y-2 w-full">
+                                                            <PrimaryButton onClick={() => openUploadModal(task)} className="w-full justify-center bg-indigo-600 hover:bg-indigo-700 py-3">
+                                                                Sync / Upload
+                                                            </PrimaryButton>
+                                                            <SecondaryButton className="w-full justify-center py-3">
+                                                                Open Chat
+                                                            </SecondaryButton>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
                                         {activeTasks.length === 0 && (
-                                            <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
-                                                <div className="text-gray-300 text-4xl mb-3">☕</div>
-                                                <p className="text-gray-500 font-medium">No active tasks. Good job!</p>
+                                            <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
+                                                <div className="inline-block p-4 rounded-full bg-gray-50 mb-4 text-2xl">⚡</div>
+                                                <h3 className="text-lg font-bold text-gray-800">Available for work!</h3>
+                                                <p className="text-gray-500 mb-6">You have no active tasks. Check the "New Tasks" tab.</p>
                                             </div>
                                         )}
                                     </div>
@@ -256,56 +331,44 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                             </div>
                         )}
 
+                        {/* ... (Tasks Tab and Earnings Tab kept mostly same for brevity, can re-include if needed, but primarily layout change is outer shell) ... */}
                         {activeTab === 'tasks' && (
-                            <div className="animate-fade-in-up">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-6">Task Center</h2>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Upcoming */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h3 className="font-bold text-gray-700">Available Tasks</h3>
-                                            <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{upcomingTasks.length}</span>
-                                        </div>
-                                        {upcomingTasks.map(task => (
-                                            <div
-                                                key={task.id}
-                                                onClick={() => openPreviewModal(task)}
-                                                className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:border-indigo-400 hover:shadow-md transition-all group"
-                                            >
-                                                <div className="flex justify-between items-start mb-3">
-                                                    <div>
-                                                        <span className="text-xs text-indigo-500 font-bold tracking-wider uppercase mb-1 block">New Assignment</span>
-                                                        <h4 className="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors">{task.package?.name}</h4>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-500 line-clamp-2 mb-4">{task.description}</p>
-                                                <div className="flex justify-between items-center pt-3 border-t border-gray-50">
-                                                    <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">Due: {new Date(task.deadline).toLocaleDateString()}</span>
-                                                    <span className="text-indigo-600 text-xs font-bold flex items-center group-hover:translate-x-1 transition-transform">
-                                                        Review & Accept →
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {upcomingTasks.length === 0 && <p className="text-gray-400 italic text-sm text-center py-8">No new assignments available.</p>}
+                            <div className="animate-fade-in-up space-y-8">
+                                <div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h2 className="text-xl font-bold text-gray-800">New Assignments</h2>
                                     </div>
-
-                                    {/* Review Queue */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h3 className="font-bold text-gray-700">In Review</h3>
-                                            <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{reviewTasks.length}</span>
-                                        </div>
-                                        {reviewTasks.map(task => (
-                                            <div key={task.id} className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-purple-400">
-                                                <h4 className="font-bold text-gray-800">{task.package?.name}</h4>
-                                                <span className="text-xs text-gray-500 block mb-2">{task.package?.service?.name}</span>
-                                                <div className="mt-3 flex items-center text-xs text-purple-600 font-medium bg-purple-50 p-2 rounded">
-                                                    <span className="mr-2 animate-pulse">●</span> Waiting for client feedback...
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        {upcomingTasks.map(task => (
+                                            <div key={task.id} onClick={() => openPreviewModal(task)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-indigo-500 cursor-pointer transition-colors group">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <span className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded">NEW</span>
+                                                    <span className="text-xs text-gray-500">{new Date(task.deadline).toLocaleDateString()}</span>
+                                                </div>
+                                                <h3 className="font-bold text-gray-800 text-lg group-hover:text-indigo-600 transition-colors mb-2">{task.package?.name}</h3>
+                                                <p className="text-sm text-gray-500 mb-4 line-clamp-2">{task.description}</p>
+                                                <div className="flex items-center text-sm font-bold text-indigo-600">
+                                                    Review & Start <span className="ml-1">→</span>
                                                 </div>
                                             </div>
                                         ))}
-                                        {reviewTasks.length === 0 && <p className="text-gray-400 italic text-sm text-center py-8">Review queue is empty.</p>}
+                                        {upcomingTasks.length === 0 && (
+                                            <div className="col-span-2 p-8 text-center text-gray-400 italic bg-white rounded-xl">No new tasks available.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-4">In Review (Waiting Client)</h2>
+                                    <div className="space-y-3">
+                                        {reviewTasks.map(task => (
+                                            <div key={task.id} className="bg-white p-6 rounded-2xl border-l-4 border-amber-400 shadow-sm">
+                                                <div className="flex justify-between">
+                                                    <h4 className="font-bold text-gray-800">{task.package?.name}</h4>
+                                                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">Under Review</span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -334,9 +397,6 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                         </div>
                                     </div>
                                 </div>
-                                <div className="border-t pt-6 text-center text-gray-500 text-sm">
-                                    Comparison and withdrawal history features are under development.
-                                </div>
                             </div>
                         )}
                     </div>
@@ -358,7 +418,6 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                 </div>
                                 <div className="text-right">
                                     <span className="block text-2xl font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(previewTask.amount)}</span>
-                                    <span className="text-xs text-gray-400">Estimated payout</span>
                                 </div>
                             </div>
 
@@ -369,19 +428,21 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                 </p>
                             </div>
 
-                            <div className="flex items-center gap-4 bg-red-50 p-4 rounded-xl border border-red-100 mb-8">
-                                <div className="text-red-500">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-red-400 uppercase">Strict Deadline</p>
-                                    <p className="font-bold text-red-700">{new Date(previewTask.deadline).toLocaleString()}</p>
-                                </div>
+                            {/* Features in Preview */}
+                            <div className="mb-6">
+                                <h3 className="font-bold text-gray-700 text-sm mb-3 uppercase tracking-wide">Package Features</h3>
+                                <ul className="grid grid-cols-2 gap-2">
+                                    {previewTask.package?.features?.map((feature, index) => (
+                                        <li key={index} className="text-sm text-gray-600 flex items-center gap-2">
+                                            <span className="text-green-500">✓</span> {feature}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
 
-                            <div className="flex flex-col-reverse md:flex-row justify-end gap-3">
-                                <SecondaryButton onClick={closePreviewModal} className="justify-center">Cancel</SecondaryButton>
-                                <PrimaryButton onClick={handleAcceptTask} className="justify-center bg-emerald-600 hover:bg-emerald-700 h-10 px-8">
+                            <div className="flex justify-end gap-3">
+                                <SecondaryButton onClick={closePreviewModal}>Cancel</SecondaryButton>
+                                <PrimaryButton onClick={handleAcceptTask} className="bg-emerald-600 hover:bg-emerald-700">
                                     Accept Assignment
                                 </PrimaryButton>
                             </div>
@@ -390,15 +451,89 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                 </div>
             </Modal>
 
-            {/* 2. Upload Modal */}
+            {/* 2. Detail Modal (Active Tasks) */}
+            <Modal show={showDetailModal} onClose={closeDetailModal}>
+                <div className="p-6">
+                    {detailTask && (
+                        <>
+                            <div className="border-b pb-4 mb-6">
+                                <h2 className="text-xl font-bold text-gray-900">Task Details</h2>
+                                <p className="text-sm text-gray-500">Order #{detailTask.order_number}</p>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div>
+                                    <h3 className="font-bold text-gray-700 mb-2">Customer Information</h3>
+                                    <div className="bg-gray-50 p-4 rounded-lg">
+                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                            <div>
+                                                <p className="text-gray-500 text-xs uppercase">Name</p>
+                                                <p className="font-semibold">{detailTask.user?.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-gray-500 text-xs uppercase">Email</p>
+                                                <p className="font-semibold">{detailTask.user?.email}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* New: Package Details / Features */}
+                                <div>
+                                    <h3 className="font-bold text-gray-700 mb-3">Package Deliverables</h3>
+                                    <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-5">
+                                        <div className="flex justify-between items-center mb-4 border-b border-indigo-100 pb-3">
+                                            <div>
+                                                <span className="text-xs text-indigo-600 font-bold uppercase tracking-wider block mb-1">Package Type</span>
+                                                <span className="block font-bold text-gray-800 text-lg">{detailTask.package?.name}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">Payout</span>
+                                                <span className="font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(detailTask.amount)}</span>
+                                            </div>
+                                        </div>
+
+
+                                        <h4 className="text-xs font-bold text-indigo-600 uppercase mb-3">Included Features</h4>
+                                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {Array.isArray(detailTask.package?.features) && detailTask.package.features.map((feature, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 bg-white p-2 rounded border border-indigo-100 shadow-sm">
+                                                    <span className="text-indigo-500 mt-0.5">✓</span>
+                                                    <span className="leading-tight">{feature}</span>
+                                                </li>
+                                            ))}
+                                            {(!Array.isArray(detailTask.package?.features) || detailTask.package.features.length === 0) && (
+                                                <li className="text-sm text-gray-400 italic">No specific features listed for this package.</li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="font-bold text-gray-700 mb-2">Instructions / Brief</h3>
+                                    <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 whitespace-pre-wrap leading-relaxed border border-gray-200">
+                                        {detailTask.description}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-end">
+                                <SecondaryButton onClick={closeDetailModal}>Close Details</SecondaryButton>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
+
+            {/* 3. Upload Modal */}
             <Modal show={showUploadModal} onClose={closeUploadModal}>
                 <div className="p-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Sync Deliverables</h2>
 
+                    {/* Link Form */}
                     <div className="mb-8">
                         <label className="block text-sm font-bold text-gray-700 mb-4">
                             1. External Resource Link
-                            <span className="block font-normal text-xs text-gray-400 mt-1">Figma, Google Drive, GitHub Repository</span>
                         </label>
                         <form onSubmit={submitLink} className="flex gap-2">
                             <TextInput
@@ -412,10 +547,10 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                         </form>
                     </div>
 
+                    {/* File Form with NOTE */}
                     <div className="border-t border-gray-100 pt-8">
                         <label className="block text-sm font-bold text-gray-700 mb-4">
-                            2. Upload Source File
-                            <span className="block font-normal text-xs text-gray-400 mt-1">Zip, Rar, PDF, or Final Project File</span>
+                            2. Upload Source File & Notes
                         </label>
                         <form onSubmit={submitUpload}>
                             <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors mb-4 cursor-pointer group">
@@ -425,22 +560,34 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                     onChange={(e) => setData('file', e.target.files[0])}
                                 />
                                 <div className="text-gray-400 group-hover:text-indigo-500">
-                                    <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                    <p className="text-sm font-medium">{data.file ? data.file.name : "Click or Drag file here"}</p>
+                                    <p className="text-sm font-medium">{data.file ? data.file.name : "Click or Drag file here (Max 10MB)"}</p>
                                 </div>
                             </div>
                             {errors.file && <div className="text-red-500 text-sm mb-4">{errors.file}</div>}
 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <InputLabel value="Version Label" className="mb-2" />
+                                    <TextInput
+                                        type="text"
+                                        className="w-full"
+                                        placeholder="e.g. Final Revision v2"
+                                        value={data.version_label}
+                                        onChange={(e) => setData('version_label', e.target.value)}
+                                    />
+                                    {errors.version_label && <div className="text-red-500 text-sm mt-1">{errors.version_label}</div>}
+                                </div>
+                            </div>
+
                             <div className="mb-6">
-                                <InputLabel value="Version Label" className="mb-2" />
-                                <TextInput
-                                    type="text"
-                                    className="w-full"
-                                    placeholder="e.g. Final Revision v2"
-                                    value={data.version_label}
-                                    onChange={(e) => setData('version_label', e.target.value)}
-                                />
-                                {errors.version_label && <div className="text-red-500 text-sm mt-1">{errors.version_label}</div>}
+                                <InputLabel value="Note / Catatan (Optional)" className="mb-2" />
+                                <textarea
+                                    className="block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm"
+                                    rows="3"
+                                    placeholder="Add notes about this version..."
+                                    value={data.note}
+                                    onChange={(e) => setData('note', e.target.value)}
+                                ></textarea>
                             </div>
 
                             <div className="flex justify-end gap-3">

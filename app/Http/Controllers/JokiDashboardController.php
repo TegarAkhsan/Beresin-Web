@@ -101,14 +101,16 @@ class JokiDashboardController extends Controller
 
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB
-            'version_label' => 'required|string|max:50'
+            'version_label' => 'required|string|max:50',
+            'note' => 'nullable|string'
         ]);
 
         $path = $request->file('file')->store('order_results', 'public');
 
         $order->files()->create([
             'file_path' => $path,
-            'version_label' => $request->version_label
+            'version_label' => $request->version_label,
+            'note' => $request->note
         ]);
 
         // Also update main result_file for backward compatibility

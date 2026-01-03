@@ -9,7 +9,7 @@ class OrderFile extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['order_id', 'file_path', 'version_label'];
+    protected $fillable = ['order_id', 'file_path', 'version_label', 'note'];
 
     public function order()
     {

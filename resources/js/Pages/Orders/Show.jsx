@@ -2,16 +2,67 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
 
-export default function Show({ auth, order }) {
+import { useState, useEffect } from 'react';
+
+export default function Show({ auth, order, whatsapp_number }) {
     const { data, setData, post, processing, errors } = useForm({
         payment_proof: null,
         result_file: null,
         status: order.status,
     });
 
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [paymentMethod, setPaymentMethod] = useState('va'); // 'va' or 'qris'
+    const [selectedBank, setSelectedBank] = useState('bca');
+
+    useEffect(() => {
+        // Countdown Logic (3 hours from created_at)
+        const createdTime = new Date(order.created_at).getTime();
+        const expiryTime = createdTime + (3 * 60 * 60 * 1000); // 3 hours in ms
+
+        const interval = setInterval(() => {
+            const now = new Date().getTime();
+            const distance = expiryTime - now;
+
+            if (distance < 0) {
+                clearInterval(interval);
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(distance);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [order.created_at]);
+
+    const formatTime = (ms) => {
+        const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+        return `${hours}h ${minutes}m ${seconds}s`;
+    };
+
+    const confirmViaWhatsapp = () => {
+        const message = `Halo Admin Beresin, saya telah melakukan pemesanan baru via Website.
+
+No Order: ${order.order_number}
+Nama: ${order.user.name}
+Layanan: ${order.package.service.name}
+Paket: ${order.package.name}
+
+Mohon konfirmasi dan prosesnya. Terima kasih.`;
+        const targetNumber = whatsapp_number || '6281234567890';
+        const whatsappUrl = `https://wa.me/${targetNumber}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    };
+
     const uploadPayment = (e) => {
         e.preventDefault();
-        post(route('orders.update', order.id));
+        post(route('orders.update', order.id), {
+            onSuccess: () => {
+                confirmViaWhatsapp();
+            }
+        });
     };
 
     const uploadResult = (e) => {
@@ -19,114 +70,191 @@ export default function Show({ auth, order }) {
         post(route('orders.update', order.id));
     };
 
-    const updateStatus = (newStatus) => {
-        setData('status', newStatus);
-        // Trigger post immediately or utilize useEffect
-        // For simplicity, using a dedicated form submission or similar
-    };
-
     return (
-        <AuthenticatedLayout
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Order #{order.order_number}</h2>}
-        >
+        <AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Order #{order.order_number}</h2>}>
             <Head title={`Order #${order.order_number}`} />
 
-            <div className="py-12">
-                <div className="max-w-4xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+            <div className="py-12 bg-gray-50 min-h-screen">
+                <div className="max-w-5xl mx-auto sm:px-6 lg:px-8">
 
-                        {/* Status Bar */}
-                        <div className="mb-8 flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                            <div>
-                                <p className="text-sm text-gray-500">Status</p>
-                                <span className={`text-lg font-bold uppercase ${order.status === 'completed' ? 'text-green-600' : 'text-indigo-600'}`}>
-                                    {order.status.replace('_', ' ')}
-                                </span>
+                    {/* TOP STATUS BAR */}
+                    <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className={`px-4 py-2 rounded-full font-bold text-sm uppercase ${order.status === 'pending_payment' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                                {order.status.replace('_', ' ')}
                             </div>
-                            <div className="text-right">
-                                <p className="text-sm text-gray-500">Amount</p>
-                                <p className="text-xl font-bold">Rp {new Intl.NumberFormat('id-ID').format(order.amount)}</p>
-                            </div>
+                            {order.status === 'pending_payment' && (
+                                <div className="text-red-500 font-bold flex items-center gap-2">
+                                    <span>⏳ Expires in:</span>
+                                    <span className="font-mono text-xl">{formatTime(timeLeft)}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="text-right">
+                            <p className="text-sm text-gray-500">Total Amount</p>
+                            <p className="text-2xl font-extrabold text-gray-900">Rp {new Intl.NumberFormat('id-ID').format(order.amount)}</p>
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* LEFT: PAYMENT INSTRUCTIONS (Shown only if pending) */}
+                        <div className="md:col-span-2 space-y-6">
+                            {order.status === 'pending_payment' ? (
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-6 border-b pb-4">Payment Instructions</h3>
+
+                                    {/* Payment Method Tabs */}
+                                    <div className="flex gap-4 mb-6">
+                                        <button
+                                            onClick={() => setPaymentMethod('va')}
+                                            className={`flex-1 py-3 rounded-lg border font-medium transition-all ${paymentMethod === 'va' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        >
+                                            Virtual Account
+                                        </button>
+                                        <button
+                                            onClick={() => setPaymentMethod('qris')}
+                                            className={`flex-1 py-3 rounded-lg border font-medium transition-all ${paymentMethod === 'qris' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        >
+                                            QRIS
+                                        </button>
+                                    </div>
+
+                                    {/* VA Content */}
+                                    {paymentMethod === 'va' && (
+                                        <div className="animate-fade-in">
+                                            <p className="mb-4 text-sm text-gray-600">Select Bank:</p>
+                                            <div className="flex gap-3 mb-6">
+                                                {['BCA', 'Mandiri', 'BNI', 'BRI'].map(bank => (
+                                                    <button
+                                                        key={bank}
+                                                        onClick={() => setSelectedBank(bank)}
+                                                        className={`px-4 py-2 rounded border text-sm font-bold ${selectedBank === bank ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                                                    >
+                                                        {bank}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="bg-gray-50 p-6 rounded-xl border border-dashed border-gray-300 text-center mb-6">
+                                                <p className="text-gray-500 text-sm mb-2">Virtual Account Number ({selectedBank})</p>
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <h2 className="text-3xl font-mono font-bold text-gray-800 tracking-wider">8801234567890</h2>
+                                                    <button className="text-indigo-600 hover:text-indigo-800 text-sm font-bold ml-2">COPY</button>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-sm text-gray-600 space-y-2">
+                                                <p className="font-bold">How to pay:</p>
+                                                <ol className="list-decimal list-inside space-y-1 ml-2">
+                                                    <li>Open your Mobile Banking app (m-Ranking).</li>
+                                                    <li>Select <strong>Payment</strong> or <strong>Transfer</strong> menu.</li>
+                                                    <li>Choose <strong>Virtual Account</strong>.</li>
+                                                    <li>Enter the VA number above.</li>
+                                                    <li>Confirm the payment details.</li>
+                                                    <li>Save the transaction receipt.</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* QRIS Content */}
+                                    {paymentMethod === 'qris' && (
+                                        <div className="animate-fade-in text-center">
+                                            <p className="mb-4 text-sm text-gray-600">Scan this QR Code with GoPay, OVO, Dana, or Mobile Banking:</p>
+                                            <div className="bg-white border-2 border-gray-900 inline-block p-4 rounded-xl mb-6">
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QRIS" className="w-48 h-48 mx-auto opacity-50" />
+                                                <p className="text-xs font-bold mt-2">BERESIN PAYMENT</p>
+                                            </div>
+                                            <div className="text-sm text-left max-w-md mx-auto space-y-2">
+                                                <ol className="list-decimal list-inside space-y-1 ml-2 text-gray-600">
+                                                    <li>Open any e-wallet or banking app.</li>
+                                                    <li>Select <strong>Scan QR</strong>.</li>
+                                                    <li>Scan the code above.</li>
+                                                    <li>Check the merchant name "Beresin".</li>
+                                                    <li>Enter amount manually if not set.</li>
+                                                    <li>Confirm payment.</li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col md:flex-row gap-4">
+                                        <div className="flex-1">
+                                            <p className="text-sm text-gray-500 mb-2">Already paid?</p>
+                                            <button
+                                                onClick={confirmViaWhatsapp}
+                                                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                            >
+                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" /></svg>
+                                                Confirm via WhatsApp Admin
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Upload Proof Fallback */}
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        <p className="text-sm text-gray-500 mb-2">Or upload proof manually:</p>
+                                        <form onSubmit={uploadPayment} className="flex gap-2">
+                                            <input
+                                                type="file"
+                                                onChange={e => setData('payment_proof', e.target.files[0])}
+                                                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                                            />
+                                            <PrimaryButton disabled={processing} className="whitespace-nowrap">Upload</PrimaryButton>
+                                        </form>
+                                    </div>
+                                </div>
+                            ) : (
+                                /* IF NOT PENDING PAYMENT */
+                                <div className="bg-white rounded-xl shadow-sm p-6">
+                                    <div className="bg-green-50 p-6 rounded-xl border border-green-200 text-center">
+                                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Verified!</h3>
+                                        <p className="text-gray-600">Your order is being processed by our team.</p>
+                                    </div>
+
+                                    {order.result_file && (
+                                        <div className="mt-6 bg-indigo-50 p-6 rounded-xl border border-indigo-200 text-center">
+                                            <h3 className="font-bold text-indigo-900 mb-2">Result Ready!</h3>
+                                            <a href={`/storage/${order.result_file}`} target="_blank" className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full font-bold hover:bg-indigo-700 transition-colors">
+                                                Download Result 📂
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Order Details */}
-                        <div className="grid md:grid-cols-2 gap-8 mb-8">
-                            <div>
-                                <h3 className="text-lg font-bold mb-4">Project Details</h3>
-                                <div className="space-y-4">
-                                    <div>
-                                        <p className="text-sm text-gray-500">Service</p>
-                                        <p className="font-medium">{order.package.service.name} - {order.package.name}</p>
+                        {/* RIGHT: ORDER OVERVIEW */}
+                        <div className="md:col-span-1">
+                            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-6">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Order Overview</h3>
+                                <div className="space-y-4 text-sm">
+                                    <div className="flex justify-between border-b pb-2">
+                                        <span className="text-gray-500">Order Code</span>
+                                        <span className="font-mono font-bold">{order.order_number}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b pb-2">
+                                        <span className="text-gray-500">Date</span>
+                                        <span className="font-medium">{new Date(order.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-500">Description</p>
-                                        <p className="text-gray-700 whitespace-pre-wrap">{order.description}</p>
+                                        <span className="text-gray-500 block mb-1">Package</span>
+                                        <span className="font-bold block text-gray-800">{order.package.service.name}</span>
+                                        <span className="text-indigo-600">{order.package.name}</span>
                                     </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Deadline</p>
-                                        <p className="font-medium text-red-500">{order.deadline}</p>
+                                    <div className="pt-2">
+                                        <span className="text-gray-500 block mb-1">Description</span>
+                                        <p className="text-gray-700 bg-gray-50 p-3 rounded-lg text-xs leading-relaxed">
+                                            {order.description}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
-
-                            <div>
-                                <h3 className="text-lg font-bold mb-4">Actions</h3>
-
-                                {/* Customer Actions */}
-                                {auth.user.role === 'customer' && (
-                                    <div className="space-y-6">
-                                        {order.status === 'pending_payment' && (
-                                            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                                                <h4 className="font-bold text-yellow-800 mb-2">Payment Required</h4>
-                                                <p className="text-sm text-yellow-700 mb-4">Please transfer to BCA 1234567890 (Beresin) and upload proof.</p>
-                                                <form onSubmit={uploadPayment}>
-                                                    <input
-                                                        type="file"
-                                                        onChange={e => setData('payment_proof', e.target.files[0])}
-                                                        className="block w-full text-sm text-slate-500 mb-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                                                    />
-                                                    <PrimaryButton disabled={processing}>Upload Proof</PrimaryButton>
-                                                </form>
-                                            </div>
-                                        )}
-
-                                        {order.result_file && (
-                                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                                <h4 className="font-bold text-green-800 mb-2">Result Ready!</h4>
-                                                <a href={`/storage/${order.result_file}`} target="_blank" className="text-indigo-600 underline font-bold">
-                                                    Download Result
-                                                </a>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Joki Actions */}
-                                {auth.user.role === 'joki' && (
-                                    <div className="space-y-6">
-                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                            <h4 className="font-bold text-blue-800 mb-2">Workspace</h4>
-
-                                            <div className="mb-4">
-                                                <p className="text-sm text-blue-700 mb-1">Update Status:</p>
-                                                {/* Status buttons or select would go here */}
-                                            </div>
-
-                                            <form onSubmit={uploadResult}>
-                                                <label className="block text-sm font-medium text-blue-900 mb-2">Upload Result File</label>
-                                                <input
-                                                    type="file"
-                                                    onChange={e => setData('result_file', e.target.files[0])}
-                                                    className="block w-full text-sm text-slate-500 mb-2"
-                                                />
-                                                <PrimaryButton disabled={processing}>Submit Result</PrimaryButton>
-                                            </form>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
-
                     </div>
                 </div>
             </div>

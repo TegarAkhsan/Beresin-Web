@@ -28,16 +28,20 @@ class OrderController extends Controller
             // User Profile Fields
             'name' => 'required|string|max:255',
             'gender' => 'required|in:L,P',
-            'email' => 'required|email', // Check match?
+            'email' => 'required|email',
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
             'university' => 'required|string',
             'referral_source' => 'required|string',
-            // Order Fields - description removed from form, assuming generated or fixed? 
-            // Wait, Services.jsx DOES NOT sending description/deadline/notes in the new form!
-            // I need to adjust validation. The standard form only asks for profile info.
-            // Let's assume description is auto-filled or optional for now?
-            // Actually, looking at Services.jsx, it ONLY sends profile data + package_id.
+
+            // Order Fields
+            'description' => 'nullable|string', // Made optional/nullable based on "Catatan Pesanan"
+            'deadline' => 'required|date|after:today',
+            'notes' => 'nullable|string',
+
+            // File Uploads
+            'reference_file' => 'nullable|file|max:10240', // 10MB Max
+            'previous_project_file' => 'nullable|file|max:10240',
         ]);
 
         $user = auth()->user();
@@ -54,37 +58,54 @@ class OrderController extends Controller
 
         $package = Package::find($validated['package_id']);
 
+        // Handle File Uploads
+        $referenceFilePath = null;
+        if ($request->hasFile('reference_file')) {
+            $referenceFilePath = $request->file('reference_file')->store('order_refs', 'public');
+        }
+
+        $projectFilePath = null;
+        if ($request->hasFile('previous_project_file')) {
+            $projectFilePath = $request->file('previous_project_file')->store('order_projects', 'public');
+        }
+
         $order = Order::create([
             'order_number' => 'ORD-' . strtoupper(Str::random(10)),
             'user_id' => $user->id,
             'package_id' => $package->id,
             'amount' => $package->price,
-            'description' => 'New Order for ' . $package->name, // Default description
-            'deadline' => now()->addDays(7), // Default deadline
+            'description' => $validated['description'] ?? 'No description provided.',
+            'deadline' => $validated['deadline'],
+            'notes' => $validated['notes'] ?? null,
+            'reference_file' => $referenceFilePath,
+            'previous_project_file' => $projectFilePath,
             'status' => 'pending_payment',
         ]);
 
         // Return the created order to the frontend
-        return back()->with([
-            'message' => 'Order created successfully!',
-            'order' => $order
-        ]);
+        return redirect()->route('orders.show', $order)->with('message', 'Order placed successfully! Please complete payment.');
     }
 
     public function show(Order $order)
     {
-        $this->authorize('view', $order);
+        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+            abort(403);
+        }
 
         $order->load(['package.service', 'joki', 'user']);
+        $whatsapp_number = \App\Models\Setting::where('key', 'whatsapp_number')->value('value');
 
         return Inertia::render('Orders/Show', [
             'order' => $order,
+            'whatsapp_number' => $whatsapp_number,
         ]);
     }
 
     public function update(Request $request, Order $order)
     {
-        $this->authorize('update', $order);
+        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin' && auth()->user()->role !== 'joki') {
+            abort(403);
+        }
 
         if ($request->hasFile('payment_proof')) {
             $path = $request->file('payment_proof')->store('payments', 'public');
@@ -116,7 +137,9 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        $this->authorize('update', $order);
+        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+            abort(403);
+        }
 
         if ($order->status !== 'pending_payment') {
             return back()->with('error', 'Order cannot be cancelled.');
@@ -129,7 +152,9 @@ class OrderController extends Controller
 
     public function downloadInvoice(Order $order)
     {
-        $this->authorize('view', $order);
+        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+            abort(403);
+        }
 
         $order->load(['user', 'package.service']);
         $whatsapp = \App\Models\Setting::where('key', 'whatsapp_number')->value('value');

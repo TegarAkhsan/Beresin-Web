@@ -29,7 +29,9 @@ class Order extends Model
         'invoice_number',
         'started_at',
         'completed_at',
-        'external_link'
+        'external_link',
+        'reference_file',
+        'previous_project_file'
     ];
 
     protected $casts = [
@@ -54,6 +56,12 @@ class Order extends Model
     }
 
     public function reviews()
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    // Alias for singular access
+    public function review()
     {
         return $this->hasOne(Review::class);
     }
