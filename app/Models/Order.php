@@ -31,7 +31,8 @@ class Order extends Model
         'completed_at',
         'external_link',
         'reference_file',
-        'previous_project_file'
+        'previous_project_file',
+        'joki_fee'
     ];
 
     protected $casts = [

@@ -25,6 +25,7 @@ export default function Create({ auth, packages, selectedPackageId }) {
         description: '', // Catatan Pesanan
         deadline: '',
         notes: '',
+        external_link: '',
         reference_file: null,
         previous_project_file: null,
 
@@ -36,14 +37,62 @@ export default function Create({ auth, packages, selectedPackageId }) {
         packages.find(p => p.id == selectedPackageId) || null
     );
 
+    const [rushFee, setRushFee] = useState(0);
+    const [totalPrice, setTotalPrice] = useState(0);
+
+    // Initial Defaults
     useEffect(() => {
         const pkg = packages.find(p => p.id == data.package_id);
         setSelectedPackage(pkg);
+
+        // Auto-set default deadline if package selected and deadline empty
+        if (pkg && !data.deadline) {
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + (pkg.duration_days || 3));
+            setData('deadline', defaultDate.toISOString().split('T')[0]);
+        }
     }, [data.package_id]);
+
+    // Fee Calculation
+    useEffect(() => {
+        if (!selectedPackage || !data.deadline) {
+            setRushFee(0);
+            setTotalPrice(selectedPackage ? selectedPackage.price + 5000 : 0);
+            return;
+        }
+
+        const standardDeadline = new Date();
+        standardDeadline.setDate(standardDeadline.getDate() + (selectedPackage.duration_days || 3));
+        standardDeadline.setHours(0, 0, 0, 0);
+
+        const userDeadline = new Date(data.deadline);
+        userDeadline.setHours(0, 0, 0, 0);
+
+        const diffTime = standardDeadline - userDeadline;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Difference in days
+
+        let fee = 0;
+        if (diffDays > 0) {
+            fee = diffDays * 25000;
+        }
+
+        setRushFee(fee);
+        setTotalPrice(selectedPackage.price + fee + 5000); // Base + Rush + Op Fee
+
+    }, [data.deadline, selectedPackage]);
+
 
     const submit = (e) => {
         e.preventDefault();
         post(route('orders.store'));
+    };
+
+    // Helper for duration text
+    const formatDuration = (days) => {
+        if (!days) return '3 Days'; // Default if days is null/undefined
+        if (days <= 3) return '1-3 Days';
+        if (days <= 7) return '6-7 Days';
+        return '10-15 Days';
     };
 
     return (
@@ -124,21 +173,32 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                         <textarea id="description" value={data.description} onChange={e => setData('description', e.target.value)} className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm h-24" placeholder="Explain your project details..." ></textarea>
                                         <InputError message={errors.description} className="mt-2" />
                                     </div>
+
                                     <div>
                                         <InputLabel htmlFor="deadline" value="Desired Deadline" />
                                         <TextInput id="deadline" type="date" value={data.deadline} onChange={e => setData('deadline', e.target.value)} className="mt-1 block w-full" required />
+                                        {rushFee > 0 && <p className="text-xs text-amber-600 font-bold mt-1">⚡ RUSH ORDER: +Rp 25.000/day earlier</p>}
+                                        <p className="text-xs text-gray-400 mt-1">Initial Recommendation: {selectedPackage?.duration_days || 3} days from now ({formatDuration(selectedPackage?.duration_days)})</p>
                                         <InputError message={errors.deadline} className="mt-2" />
+                                    </div>
+
+                                    <div>
+                                        <InputLabel htmlFor="external_link" value="External Link (Google Drive / Figma / Etc)" />
+                                        <TextInput id="external_link" type="url" value={data.external_link} onChange={e => setData('external_link', e.target.value)} className="mt-1 block w-full" placeholder="https://..." />
+                                        <InputError message={errors.external_link} className="mt-2" />
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <InputLabel htmlFor="reference_file" value="Reference File (Optional)" />
-                                            <input type="file" onChange={e => setData('reference_file', e.target.files[0])} className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <InputLabel htmlFor="reference_file" value="Reference Brief" />
+                                            <input type="file" onChange={e => setData('reference_file', e.target.files[0])} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 10MB.</p>
                                             <InputError message={errors.reference_file} className="mt-2" />
                                         </div>
                                         <div>
-                                            <InputLabel htmlFor="previous_project_file" value="Previous Project File (Optional)" />
-                                            <input type="file" onChange={e => setData('previous_project_file', e.target.files[0])} className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <InputLabel htmlFor="previous_project_file" value="Previous Project / Assets" />
+                                            <input type="file" onChange={e => setData('previous_project_file', e.target.files[0])} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 10MB.</p>
                                             <InputError message={errors.previous_project_file} className="mt-2" />
                                         </div>
                                     </div>
@@ -168,11 +228,34 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-500">Est. Time</span>
-                                            <span className="font-medium">3-7 Days</span>
+                                            <span className="font-medium">
+                                                {rushFee > 0 ? (
+                                                    <span className="text-indigo-600 font-bold">
+                                                        <span className="line-through text-gray-400 mr-2">{formatDuration(selectedPackage.duration_days)}</span>
+                                                        {Math.max(1, selectedPackage.duration_days - (rushFee / 25000))} Days
+                                                    </span>
+                                                ) : (
+                                                    <span>{formatDuration(selectedPackage.duration_days)}</span>
+                                                )}
+                                            </span>
                                         </div>
-                                        <div className="flex justify-between items-center text-lg font-bold text-indigo-900 mt-4">
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-500">Base Price</span>
+                                            <span className="font-medium">Rp {new Intl.NumberFormat('id-ID').format(selectedPackage.price)}</span>
+                                        </div>
+                                        {rushFee > 0 && (
+                                            <div className="flex justify-between items-center text-sm text-amber-600 font-bold bg-amber-50 p-2 rounded">
+                                                <span>Rush Fee</span>
+                                                <span>+ Rp {new Intl.NumberFormat('id-ID').format(rushFee)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center text-sm text-slate-500">
+                                            <span>Operational Fee</span>
+                                            <span>+ Rp 5.000</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-lg font-bold text-indigo-900 mt-4 pt-4 border-t border-gray-100">
                                             <span>Total</span>
-                                            <span>Rp {new Intl.NumberFormat('id-ID').format(selectedPackage.price)}</span>
+                                            <span>Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span>
                                         </div>
                                     </div>
                                 )}

@@ -122,10 +122,8 @@ export default function Index({ auth, orders, services, filters }) {
                                             Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 text-xs rounded-full font-semibold
-                                                ${order.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}
-                                            `}>
-                                                {order.status.replace('_', ' ').toUpperCase()}
+                                            <span className="px-2 py-1 text-xs rounded-full font-semibold bg-green-100 text-green-800">
+                                                SUDAH LUNAS
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">

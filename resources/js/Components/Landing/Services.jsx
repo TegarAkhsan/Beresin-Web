@@ -104,9 +104,20 @@ export default function Services({ services, auth }) {
                                     <div key={pkg.id} className="flex flex-col bg-white rounded-2xl border-2 border-slate-200 p-6 hover:border-slate-900 hover:shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] transition-all duration-300 relative group">
                                         <div className="mb-6">
                                             <h4 className="text-xl font-bold text-slate-900 mb-2">{pkg.name}</h4>
-                                            <p className="text-3xl font-black text-slate-900">
-                                                {Number(pkg.price) > 0 ? `Rp ${new Intl.NumberFormat('id-ID', { notation: "compact", compactDisplay: "short" }).format(pkg.price)}` : 'Negotiable'}
-                                            </p>
+                                            <div className="flex flex-col gap-1 mb-2">
+                                                <p className="text-3xl font-black text-slate-900">
+                                                    {Number(pkg.price) > 0 ? `Rp ${new Intl.NumberFormat('id-ID', { notation: "compact", compactDisplay: "short" }).format(pkg.price)}` : 'Negotiable'}
+                                                </p>
+                                                {/* Duration & Note */}
+                                                <div className="flex flex-col items-start gap-1">
+                                                    <span className="text-sm font-semibold text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                                        ⏱️ Est. {pkg.duration_days <= 3 ? '1-3 Hari' : pkg.duration_days <= 7 ? '6-7 Hari' : '10-15 Hari'}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                                                        ⚡ Bisa selesai lebih cepat!
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="flex-1 mb-8">
                                             <ul className="space-y-3">

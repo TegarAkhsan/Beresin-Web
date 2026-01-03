@@ -11,6 +11,7 @@ export default function PackageModal({ show, onClose, serviceId, packageToEdit }
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         price: '',
+        duration_days: 3,
         description: '',
         features: '', // Will be handled as multiline string
     });
@@ -20,11 +21,13 @@ export default function PackageModal({ show, onClose, serviceId, packageToEdit }
             setData({
                 name: packageToEdit.name,
                 price: packageToEdit.price,
+                duration_days: packageToEdit.duration_days || 3,
                 description: packageToEdit.description || '',
                 features: formatFeatures(packageToEdit.features),
             });
         } else {
             reset();
+            setData('duration_days', 3); // Ensure default persists
         }
     }, [packageToEdit, show]);
 
@@ -43,23 +46,19 @@ export default function PackageModal({ show, onClose, serviceId, packageToEdit }
     const submit = (e) => {
         e.preventDefault();
 
-        // Convert newlines back to array (or just keep as text if backend handles it)
-        // For now, let's assume we send it as a string and backend or this modal prepares it. 
-        // Actually best to send as is and let controller parse valid JSON or store as text.
-        // But user said "no symbols", so imply text area input.
-
         if (packageToEdit) {
             put(route('admin.packages.update', packageToEdit.id), {
-                onSuccess: onClose,
+                onSuccess: () => {
+                    reset();
+                    onClose();
+                },
             });
         } else {
-            // Need to append service_id manually since it's not in the form data hook initial state if we want it clean
-            // Alternatively use transform in useForm, but post supports data arg.
-            // Wait, useForm post sends 'data' state.
-            // Let's add service_id to route query or body.
-            // Better: route('admin.services.packages.store', serviceId)
             post(route('admin.services.packages.store', serviceId), {
-                onSuccess: onClose,
+                onSuccess: () => {
+                    reset();
+                    onClose();
+                },
             });
         }
     };
@@ -85,18 +84,38 @@ export default function PackageModal({ show, onClose, serviceId, packageToEdit }
                         <InputError message={errors.name} className="mt-2" />
                     </div>
 
-                    <div>
-                        <InputLabel htmlFor="price" value="Price (Rp)" />
-                        <TextInput
-                            id="price"
-                            type="number"
-                            value={data.price}
-                            onChange={(e) => setData('price', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="e.g. 50000"
-                            required
-                        />
-                        <InputError message={errors.price} className="mt-2" />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel htmlFor="price" value="Price (Rp)" />
+                            <div className="relative mt-1">
+                                <span className="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                                <TextInput
+                                    id="price"
+                                    type="number"
+                                    value={data.price}
+                                    onChange={(e) => setData('price', e.target.value)}
+                                    className="block w-full pl-8"
+                                    placeholder="0"
+                                    required
+                                />
+                            </div>
+                            <InputError message={errors.price} className="mt-2" />
+                        </div>
+
+                        <div>
+                            <InputLabel htmlFor="duration" value="Est. Duration (Days)" />
+                            <TextInput
+                                id="duration"
+                                type="number"
+                                value={data.duration_days}
+                                onChange={(e) => setData('duration_days', e.target.value)}
+                                className="mt-1 block w-full"
+                                placeholder="3"
+                                required
+                                min="1"
+                            />
+                            <InputError message={errors.duration_days} className="mt-2" />
+                        </div>
                     </div>
 
                     <div>

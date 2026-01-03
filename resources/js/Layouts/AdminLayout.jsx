@@ -1,27 +1,15 @@
-import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import Toast from '@/Components/Toast';
 
 export default function AdminLayout({ user, header, children }) {
     const { url } = usePage();
-    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
-
-    // Web3-inspired navigation with "Premium" feel
-    const navigation = [
-        { name: 'Dashboard', href: route('admin.dashboard'), active: route().current('admin.dashboard'), icon: 'dashboard' },
-        { name: 'Users (Joki)', href: route('admin.users.index'), active: route().current('admin.users.*'), icon: 'users' },
-        { name: 'Verify Payments', href: route('admin.orders.verify'), active: route().current('admin.orders.verify'), icon: 'credit-card' },
-        { name: 'Assign Tasks', href: route('admin.orders.assign'), active: route().current('admin.orders.assign'), icon: 'clipboard-check' },
-        { name: 'Transactions', href: route('admin.transactions.index'), active: route().current('admin.transactions.*'), icon: 'receipt' },
-        { name: 'Manage Services', href: route('admin.services.index'), active: route().current('admin.services.*'), icon: 'cube' },
-    ];
+    // ... existing code ...
 
     return (
         <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-900 flex">
+            <Toast />
             {/* Sidebar - Glassy & Clean */}
             <aside className="w-72 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen fixed z-30 transition-all duration-300 shadow-[2px_0_20px_rgba(0,0,0,0.02)]">
+
                 <div className="h-20 flex items-center px-8 border-b border-gray-50">
                     <Link href="/admin" className="text-2xl font-bold tracking-tight text-gray-900">
                         Beresin<span className="text-indigo-600">.</span>

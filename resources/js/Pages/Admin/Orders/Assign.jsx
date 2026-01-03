@@ -2,17 +2,21 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import ConfirmationModal from '@/Components/ConfirmationModal'; // Added this import
 import { Head, router, useForm } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import TextInput from '@/Components/TextInput';
 
-export default function Assign({ auth, orders, assignedOrders, jokis, filters }) { // filters added
+export default function Assign({ auth, orders, assignedOrders, jokis, filters }) {
     const { data, setData, post, processing, errors, reset } = useForm({
+        assignment_type: 'manual',
         joki_id: '',
+        joki_fee: '',
     });
 
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [search, setSearch] = useState(filters.search || '');
+    const [assignmentMethod, setAssignmentMethod] = useState(null); // 'manual' or 'auto'
 
     // Auto-Search with Debounce
     useEffect(() => {
@@ -31,13 +35,57 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
         return () => clearTimeout(timer);
     }, [search]);
 
-    const openAssignModal = (order) => {
+    const openAssignModal = (order, method = null) => {
         setSelectedOrder(order);
-        setData('joki_id', '');
+        setAssignmentMethod(method);
+        setData({
+            assignment_type: method || 'manual',
+            joki_id: '',
+            joki_fee: '',
+        });
+    };
+
+    const handleAutoAssign = () => {
+        router.post(route('admin.orders.store_assignment', selectedOrder.id), {
+            assignment_type: 'auto',
+            // No fee needed for auto, backend handles it
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeAssignModal();
+                // Toast handles it
+            },
+        });
+    };
+
+    // State for Confirmation Modal
+    const [showAutoAssignModal, setShowAutoAssignModal] = useState(false);
+
+    // Open Confirmation
+    const handleBatchAutoAssign = () => {
+        setShowAutoAssignModal(true);
+    };
+
+    // Execute Batch Assign
+    const confirmBatchAutoAssign = () => {
+        router.post(route('admin.orders.batch_auto_assign'), {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowAutoAssignModal(false);
+                // Toast in AdminLayout handles the notification automatically via flash prop
+            },
+            onError: (errors) => {
+                console.error(errors);
+                setShowAutoAssignModal(false);
+                alert('An error occurred during auto-assignment.');
+            },
+            onFinish: () => setShowAutoAssignModal(false),
+        });
     };
 
     const closeAssignModal = () => {
         setSelectedOrder(null);
+        setAssignmentMethod(null);
         reset();
     };
 
@@ -103,10 +151,37 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                 {/* Left Column: Pending Assignments */}
                 <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-fit">
                     <div className="p-6 text-gray-900 dark:text-gray-100">
-                        <h3 className="text-lg font-bold mb-4 text-amber-600 flex items-center">
-                            <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
-                            Pending Assignments
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-amber-600 flex items-center">
+                                <span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+                                Pending Assignments
+                            </h3>
+
+                            {/* Header Buttons: Manual / Auto */}
+                            <div className="flex gap-2">
+                                {orders.data.length > 0 && (
+                                    <>
+                                        <button
+                                            onClick={handleBatchAutoAssign}
+                                            className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-xs font-bold uppercase tracking-wider transition shadow-sm flex items-center gap-1"
+                                            title="Assign all pending orders automatically"
+                                        >
+                                            <span>🤖</span> Auto Assign All
+                                        </button>
+
+                                        <ConfirmationModal
+                                            show={showAutoAssignModal}
+                                            title="Run Batch Auto-Assign?"
+                                            message={`This will automatically assign all ${orders.data.length} pending orders to the most suitable Jokis based on workload and specialization (Web/UI/Mobile). Are you sure?`}
+                                            confirmText="Yes, Auto Assign"
+                                            onConfirm={confirmBatchAutoAssign}
+                                            onClose={() => setShowAutoAssignModal(false)}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -130,8 +205,8 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <button
-                                                    onClick={() => openAssignModal(order)}
-                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition"
+                                                    onClick={() => openAssignModal(order, 'manual')}
+                                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold uppercase tracking-wider transition shadow-sm"
                                                 >
                                                     Assign
                                                 </button>
@@ -205,42 +280,170 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                 </div>
             </div>
 
-            {/* Assign Modal */}
+            {/* Assign Modal - Multi-Step */}
             <Modal show={!!selectedOrder} onClose={closeAssignModal}>
-                <form onSubmit={handleAssign} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        Assign Joki for Order #{selectedOrder?.order_number}
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                        Assign Order #{selectedOrder?.order_number}
                     </h2>
 
-                    <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 mb-6">
-                        Select a Joki to allow them to start working on this task.
-                        <br />
-                        <span className="font-semibold">Service:</span> {selectedOrder?.package?.service?.name} - {selectedOrder?.package?.name}
-                    </p>
+                    {/* Step 1: Method Selection */}
+                    {!assignmentMethod && (
+                        <div className="space-y-4">
+                            <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
+                                Choose how you would like to assign this task.
+                            </p>
+                            <div className="grid grid-cols-1 gap-4">
+                                <button
+                                    onClick={() => setAssignmentMethod('manual')}
+                                    className="group flex items-center justify-between p-4 border-2 border-indigo-100 hover:border-indigo-500 rounded-xl bg-indigo-50 hover:bg-white transition-all shadow-sm hover:shadow-md"
+                                >
+                                    <div className="text-left">
+                                        <h3 className="font-bold text-indigo-700 group-hover:text-indigo-600">Manual Assignment</h3>
+                                        <p className="text-xs text-indigo-600/70">Select a specific Joki and set the fee manually.</p>
+                                    </div>
+                                    <span className="text-2xl">👉</span>
+                                </button>
 
-                    <div className="mt-6">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Joki</label>
-                        <select
-                            value={data.joki_id}
-                            onChange={(e) => setData('joki_id', e.target.value)}
-                            className="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                            required
-                        >
-                            <option value="">-- Choose Joki --</option>
-                            {jokis.map((joki) => (
-                                <option key={joki.id} value={joki.id} disabled={joki.jobs_count >= 5}>
-                                    {joki.name} ({joki.jobs_count} active tasks)
-                                </option>
-                            ))}
-                        </select>
-                        {errors.joki_id && <div className="text-red-600 text-sm mt-1">{errors.joki_id}</div>}
-                    </div>
+                                <button
+                                    onClick={() => setAssignmentMethod('auto')}
+                                    className="group flex items-center justify-between p-4 border-2 border-teal-100 hover:border-teal-500 rounded-xl bg-teal-50 hover:bg-white transition-all shadow-sm hover:shadow-md"
+                                >
+                                    <div className="text-left">
+                                        <h3 className="font-bold text-teal-700 group-hover:text-teal-600">Auto Assignment</h3>
+                                        <p className="text-xs text-teal-600/70">System selects the least busy Joki automatically.</p>
+                                    </div>
+                                    <span className="text-2xl">🤖</span>
+                                </button>
+                            </div>
+                            <div className="mt-6 flex justify-end">
+                                <SecondaryButton onClick={closeAssignModal}>Cancel</SecondaryButton>
+                            </div>
+                        </div>
+                    )}
 
-                    <div className="mt-6 flex justify-end gap-3">
-                        <SecondaryButton onClick={closeAssignModal}>Cancel</SecondaryButton>
-                        <PrimaryButton disabled={processing}>Confirm Assignment</PrimaryButton>
-                    </div>
-                </form>
+                    {/* Step 2: Manual Assignment Form */}
+                    {assignmentMethod === 'manual' && (
+                        <form onSubmit={handleAssign}>
+                            <div className="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                <p className="text-sm text-blue-800">
+                                    <span className="font-semibold">Service:</span> {selectedOrder?.package?.service?.name} - {selectedOrder?.package?.name}
+                                </p>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Joki Selection - Card Grid */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Joki</label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-60 overflow-y-auto pr-2">
+                                        {jokis.map((joki) => {
+                                            const isSelected = parseInt(data.joki_id) === joki.id;
+                                            const isFull = joki.jobs_count >= 5;
+
+                                            return (
+                                                <div
+                                                    key={joki.id}
+                                                    onClick={() => !isFull && setData('joki_id', joki.id)}
+                                                    className={`
+                                                    relative rounded-xl p-4 border transition-all cursor-pointer flex items-center justify-between
+                                                    ${isSelected
+                                                            ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-indigo-50 dark:bg-indigo-900/20'
+                                                            : 'border-gray-200 dark:border-gray-700 hover:border-indigo-300 hover:shadow-sm bg-white dark:bg-gray-800'}
+                                                    ${isFull ? 'opacity-50 cursor-not-allowed bg-gray-50' : ''}
+                                                `}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white
+                                                        ${isSelected ? 'bg-indigo-600' : 'bg-gray-400'}
+                                                    `}>
+                                                            {joki.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className={`font-semibold text-sm ${isSelected ? 'text-indigo-900 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                                {joki.name}
+                                                            </h4>
+                                                            <p className="text-xs text-gray-500">
+                                                                {joki.jobs_count} tasks active
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Selection Indicator */}
+                                                    {isSelected && (
+                                                        <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center">
+                                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    {errors.joki_id && <div className="text-red-600 text-sm mt-1">{errors.joki_id}</div>}
+                                </div>
+
+                                {/* Fee Input */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Joki Fee (Nominal)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                                        <TextInput
+                                            type="number"
+                                            value={data.joki_fee}
+                                            onChange={(e) => setData('joki_fee', e.target.value)}
+                                            className="w-full pl-8"
+                                            placeholder="e.g. 50000"
+                                            required
+                                        />
+                                    </div>
+                                    {errors.joki_fee && <div className="text-red-600 text-sm mt-1">{errors.joki_fee}</div>}
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-end gap-3">
+                                <SecondaryButton onClick={() => setAssignmentMethod(null)}>Back</SecondaryButton>
+                                <PrimaryButton disabled={processing}>Confirm Manual Assignment</PrimaryButton>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* Step 3: Auto Assignment Confirmation */}
+                    {assignmentMethod === 'auto' && (
+                        <div>
+                            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 mb-6">
+                                <h4 className="font-bold text-teal-800 mb-2">How Auto-Assign Works</h4>
+                                <p className="text-sm text-teal-700 mb-2">
+                                    The system will search for a Joki with the <strong>lowest number of active tasks</strong> (Working + Review).
+                                </p>
+                                <p className="text-sm text-teal-700">
+                                    If multiple Jokis are tied, one will be chosen randomly.
+                                </p>
+                            </div>
+
+                            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">⚠️</div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-yellow-700">
+                                            The Joki Fee will be set to <strong>Rp 0</strong> initially. You may need to edit it later if required.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex justify-end gap-3">
+                                <SecondaryButton onClick={() => setAssignmentMethod(null)}>Back</SecondaryButton>
+                                <button
+                                    onClick={handleAutoAssign}
+                                    className="inline-flex items-center px-4 py-2 bg-teal-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-teal-700 focus:bg-teal-700 active:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                >
+                                    Confirm Auto Assign
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </Modal>
 
             {/* Joki Tasks Details Modal */}

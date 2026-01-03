@@ -16,6 +16,7 @@ class AdminPackageController extends Controller
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'features' => 'nullable|string', // We accept new-line separated string
+            'duration_days' => 'required|integer|min:1',
         ]);
 
         // Convert features string to JSON array
@@ -28,6 +29,7 @@ class AdminPackageController extends Controller
             'price' => $request->price,
             'description' => $request->description,
             'features' => $features,
+            'duration_days' => $request->duration_days,
         ]);
 
         return back()->with('message', 'Package created successfully.');
@@ -40,6 +42,7 @@ class AdminPackageController extends Controller
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'features' => 'nullable|string',
+            'duration_days' => 'required|integer|min:1',
         ]);
 
         // Convert features string to JSON array
@@ -52,6 +55,7 @@ class AdminPackageController extends Controller
             'price' => $request->price,
             'description' => $request->description,
             'features' => $features,
+            'duration_days' => $request->duration_days,
         ]);
 
         return back()->with('message', 'Package updated successfully.');

@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/orders/verify', [App\Http\Controllers\Admin\AdminOrderController::class, 'verify'])->name('orders.verify');
     Route::post('/orders/{order}/approve', [App\Http\Controllers\Admin\AdminOrderController::class, 'approvePayment'])->name('orders.approve');
 
+    Route::post('/orders/assign/batch', [App\Http\Controllers\Admin\AdminOrderController::class, 'batchAutoAssign'])->name('orders.batch_auto_assign');
     Route::get('/orders/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'assign'])->name('orders.assign');
     Route::post('/orders/{order}/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'storeAssignment'])->name('orders.store_assignment');
 
@@ -40,6 +41,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     // Transaction Report
     Route::get('/transactions', [App\Http\Controllers\Admin\AdminTransactionController::class, 'index'])->name('transactions.index');
+
+    // Settings
+    Route::get('/settings', [App\Http\Controllers\Admin\AdminSettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [App\Http\Controllers\Admin\AdminSettingController::class, 'update'])->name('settings.update');
 });
 
 Route::middleware('auth')->group(function () {

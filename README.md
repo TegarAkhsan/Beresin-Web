@@ -1,59 +1,152 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Beresin - Digital Service Platform 🚀
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+**Beresin** is a modern, comprehensive digital service marketplace connecting customers with professional freelancers ("Jokis") for various digital tasks such as Web Development, UI/UX Design, and Mobile App Development. Built with performance and user experience in mind, it features a seamless order flow, automated task assignment, and dedicated dashboards for all user roles.
 
-## About Laravel
+![Beresin Hero](https://via.placeholder.com/1200x600.png?text=Beresin+Platform+Preview)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 🛠 Tech Stack
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**Backend**
+- **Framework**: Laravel 11.x
+- **Database**: MySQL 8.0
+- **Auth**: Laravel Breeze
+- **ORM**: Eloquent
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+**Frontend**
+- **Framework**: React.js 18 (via Inertia.js)
+- **Styling**: Tailwind CSS 3.4
+- **Build Tool**: Vite
+- **Icons**: Heroicons, Lucide React
 
-## Learning Laravel
+**Tools & Services**
+- **Payment**: Xendit / Midtrans (Simulation)
+- **PDF Generation**: Barryvdh DomPDF
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## ✨ Features
 
-## Laravel Sponsors
+### 👤 Customer (Client)
+- **Modern Landing Page**: Glassmorphism UI with interactive elements.
+- **Service Catalog**: Browse services (Web, Mobile, UI/UX) with detailed packages.
+- **Seamless Ordering**: Split-form order process (Bio -> File Upload -> Payment).
+- **Payment Gateway**: Integration for VA and QRIS payments.
+- **Dashboard**: Track order status, download invoices, and view history.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 💼 Joki (Freelancer)
+- **Dedicated Dashboard**: View active workload and performance stats.
+- **Task Management**: Accept tasks, start timers, and manage deadlines.
+- **Submission System**: Upload results or provide external links directly.
+- **Workload Limits**: System prevents burnout by capping active tasks (Max 5).
+- **Specialization**: Specialized roles (Web Dev, Designer, etc.) for targeted assignments.
 
-### Premium Partners
+### 🛡 Admin (Administrator)
+- **Custom Admin Panel**: efficient management without heavy dependencies.
+- **User Management**: Create/Edit users, manage roles, and specializations.
+- **Order Verification**: Review and approve payments manually if needed.
+- **Advanced Assignment System**:
+  - **Manual Assign**: Select specific Joki with custom fees.
+  - **Auto Assign**: Algorithmically selects the least busy Joki.
+  - **Batch Auto Assign**: Automatically distributes all pending orders based on specialization.
+- **Reporting**: Transaction reports with date filters and PDF export.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## 🚀 Installation Guide
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Follow these steps to set up the project locally.
 
-## Code of Conduct
+### Prerequisites
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- MySQL
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/beresin-web.git
+cd beresin-web
+```
 
-## Security Vulnerabilities
+### 2. Install Dependencies
+**Backend**
+```bash
+composer install
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Frontend**
+```bash
+npm install
+```
 
-## License
+### 3. Environment Configuration
+Copy the `.env.example` file and configure your database settings.
+```bash
+cp .env.example .env
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Open `.env` and update your DB credentials:
+```ini
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=beresin_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 4. Generate Key & Migrate
+```bash
+php artisan key:generate
+php artisan migrate --seed
+```
+*The `--seed` flag populates the database with default services, packages, and admin accounts.*
+
+### 5. Run the Application
+You need two terminal instances running:
+
+**Terminal 1 (Laravel Server)**
+```bash
+php artisan serve
+```
+
+**Terminal 2 (Vite Dev Server)**
+```bash
+npm run dev
+```
+
+Visit `http://127.0.0.1:8000` in your browser.
+
+---
+
+## 🔑 Default Accounts (Seeder)
+
+Use these accounts to test different roles:
+
+**Administrator**
+- Email: `admin@beresin.com`
+- Password: `password`
+
+**Joki (Freelancer)**
+- Email: `joki@beresin.com`
+- Password: `password`
+
+**Customer**
+- Email: `customer@beresin.com`
+- Password: `password`
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

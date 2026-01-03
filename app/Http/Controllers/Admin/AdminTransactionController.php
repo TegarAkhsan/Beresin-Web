@@ -13,13 +13,7 @@ class AdminTransactionController extends Controller
     public function index(Request $request)
     {
         $query = Order::with(['user', 'package.service'])
-            ->where(function ($q) {
-                // Determine what counts as a "Transaction" to report. 
-                // Usually Paid orders, or Completed orders. 
-                // User said "sudah diapprove admin", so let's include anything 'paid' or further.
-                $q->where('payment_status', 'paid')
-                    ->orWhere('status', 'completed');
-            });
+            ->where('payment_status', 'paid');
 
         // Filter by Date Range
         if ($request->filled('start_date')) {

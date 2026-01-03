@@ -27,8 +27,8 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'orders' => $orders,
             'stats' => [
-                'total_orders' => $orders->count(),
-                'active_orders' => $orders->whereIn('status', ['pending_payment', 'pending', 'paid', 'in_progress', 'revision'])->count(),
+                'total_orders' => $orders->where('status', '!=', 'pending_payment')->count(),
+                'active_orders' => $orders->whereIn('status', ['pending', 'paid', 'in_progress', 'revision'])->count(),
                 'completed_orders' => $orders->where('status', 'completed')->count(),
                 'pending_payment_orders' => $orders->where('status', 'pending_payment')->count(),
             ]

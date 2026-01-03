@@ -106,14 +106,109 @@ class AdminOrderController extends Controller
     public function storeAssignment(Request $request, Order $order)
     {
         $request->validate([
-            'joki_id' => 'required|exists:users,id',
+            'assignment_type' => 'required|in:manual,auto',
+            'joki_id' => 'required_if:assignment_type,manual|nullable|exists:users,id',
+            'joki_fee' => 'required_if:assignment_type,manual|nullable|numeric|min:0',
         ]);
 
+        $jokiId = $request->joki_id;
+        $jokiName = '';
+        $fee = 0;
+
+        if ($request->assignment_type === 'auto') {
+            // Find Joki with least active jobs (Working + Review)
+            $leastBusyJoki = User::where('role', 'joki')
+                ->withCount([
+                    'jobs' => function ($query) {
+                        $query->whereIn('status', ['in_progress', 'review']);
+                    }
+                ])
+                ->orderBy('jobs_count', 'asc')
+                ->inRandomOrder() // Tie-breaker
+                ->first();
+
+            if (!$leastBusyJoki) {
+                return back()->withErrors(['joki_id' => 'No Joki available for auto-assignment.']);
+            }
+
+            $jokiId = $leastBusyJoki->id;
+            $jokiName = $leastBusyJoki->name;
+            // Fee logic for Auto: Default to Package fee logic or 0
+            // Since User requested manual input only for manual assign, we can default Auto to 0
+            // Or try to fetch from package if exists (legacy support)
+            $fee = $order->package->joki_fee ?? 0;
+        } else {
+            // Manual Assignment
+            $jokiName = User::find($jokiId)->name ?? 'Joki';
+            $fee = $request->joki_fee;
+        }
+
         $order->update([
-            'joki_id' => $request->joki_id,
+            'joki_id' => $jokiId,
+            'joki_fee' => $fee,
             'status' => 'in_progress',
         ]);
 
-        return back()->with('message', 'Task assigned to Joki successfully.');
+        return back()->with('message', "Task assigned to {$jokiName} successfully (" . ucfirst($request->assignment_type) . "). Fee: Rp " . number_format($fee, 0, ',', '.'));
+    }
+    public function batchAutoAssign()
+    {
+        $pendingOrders = Order::where('status', 'pending_assignment')
+            ->with(['package.service'])
+            ->get();
+
+        $assignedCount = 0;
+        $failedCount = 0;
+
+        foreach ($pendingOrders as $order) {
+            $serviceName = $order->package->service->name ?? '';
+            $specialization = null;
+
+            // Determine Required Specialization
+            if (stripos($serviceName, 'Web') !== false) {
+                $specialization = 'web';
+            } elseif (stripos($serviceName, 'UI') !== false || stripos($serviceName, 'UX') !== false || stripos($serviceName, 'Design') !== false) {
+                $specialization = 'ui/ux';
+            } elseif (stripos($serviceName, 'Mobile') !== false || stripos($serviceName, 'Android') !== false || stripos($serviceName, 'iOS') !== false) {
+                $specialization = 'mobile';
+            }
+
+            \Illuminate\Support\Facades\Log::info("BatchAutoAssign: Order {$order->id}, Service: {$serviceName}, Spec: {$specialization}");
+
+            // Find Candidate
+            $query = User::where('role', 'joki');
+
+            if ($specialization) {
+                $query->where(function ($q) use ($specialization) {
+                    $q->where('specialization', $specialization)
+                        ->orWhereNull('specialization');
+                });
+            }
+
+            // Get Least Busy Joki
+            $candidate = $query->withCount([
+                'jobs' => function ($q) {
+                    $q->whereIn('status', ['in_progress', 'review']);
+                }
+            ])
+                ->orderBy('jobs_count', 'asc')
+                ->inRandomOrder()
+                ->first();
+
+            if ($candidate) {
+                \Illuminate\Support\Facades\Log::info("BatchAutoAssign: Assigned to {$candidate->name} ({$candidate->id})");
+                $order->update([
+                    'joki_id' => $candidate->id,
+                    'joki_fee' => $order->package->joki_fee ?? 0,
+                    'status' => 'in_progress'
+                ]);
+                $assignedCount++;
+            } else {
+                \Illuminate\Support\Facades\Log::warning("BatchAutoAssign: No candidate found for Order {$order->id}");
+                $failedCount++;
+            }
+        }
+
+        return back()->with('message', "Batch Assign Completed. {$assignedCount} orders assigned. {$failedCount} failed orders (No Suitable Joki).");
     }
 }

@@ -24,7 +24,7 @@ export default function Hero() {
                         With Our
                     </span> <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                        Expert Joki
+                        Expert
                     </span>
                 </h1>
 

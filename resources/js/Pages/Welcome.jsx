@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react'; // Added usePage
 import Navbar from '@/Components/Landing/Navbar';
 import Hero from '@/Components/Landing/Hero';
 import Services from '@/Components/Landing/Services';
@@ -8,14 +8,52 @@ import FAQ from '@/Components/Landing/FAQ';
 import CTA from '@/Components/Landing/CTA';
 import Footer from '@/Components/Landing/Footer';
 import Asterisk from '@/Components/Landing/Asterisk';
+import Modal from '@/Components/Modal'; // Import Modal
+import PrimaryButton from '@/Components/PrimaryButton'; // Import PrimaryButton
+import SecondaryButton from '@/Components/SecondaryButton'; // Import SecondaryButton
+import { useState, useEffect } from 'react'; // Import hooks
+import Testimonials from '@/Components/Landing/Testimonials'; // Import Testimonials
 
 export default function Welcome({ auth, canLogin, canRegister, services, whatsapp_number }) {
+    const { flash } = usePage().props;
+    const [showDashboardModal, setShowDashboardModal] = useState(false);
+
+    useEffect(() => {
+        if (flash?.show_dashboard_prompt) {
+            setShowDashboardModal(true);
+        }
+    }, [flash]);
+
     return (
         <>
             <Head title="Beresin - Solusi Jasa Digital" />
             <div className="bg-[#F3F3F1] min-h-screen text-slate-900 font-sans selection:bg-yellow-400 selection:text-black overflow-x-hidden">
 
                 <Navbar auth={auth} canLogin={canLogin} canRegister={canRegister} />
+
+                {/* Dashboard Prompt Modal */}
+                <Modal show={showDashboardModal} onClose={() => setShowDashboardModal(false)}>
+                    <div className="p-6 text-center">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome Back, {auth.user?.name}! 👋</h2>
+                        <p className="text-gray-600 mb-8">
+                            You have successfully logged in. Where would you like to go next?
+                        </p>
+                        <div className="flex flex-col gap-3 justify-center">
+                            <PrimaryButton
+                                onClick={() => window.location.href = route('dashboard')}
+                                className="w-full justify-center py-4 text-base"
+                            >
+                                Go to Dashboard 🚀
+                            </PrimaryButton>
+                            <SecondaryButton
+                                onClick={() => setShowDashboardModal(false)}
+                                className="w-full justify-center py-4 text-base"
+                            >
+                                Stay on Homepage
+                            </SecondaryButton>
+                        </div>
+                    </div>
+                </Modal>
 
                 <main className="relative">
                     <Hero />
@@ -43,9 +81,17 @@ export default function Welcome({ auth, canLogin, canRegister, services, whatsap
 
                     <HowItWorks />
 
-                    {/* Decor between HowItWorks & FAQ */}
+                    {/* Decor between HowItWorks & Testimonials */}
                     <div className="relative h-0 w-full max-w-7xl mx-auto z-20 pointer-events-none">
                         <Asterisk className="absolute -top-8 right-1/4 w-28 h-28 text-slate-900/5 animate-spin-slow" />
+                        <Asterisk className="absolute top-32 left-10 w-12 h-12 text-yellow-500/20" />
+                    </div>
+
+                    <Testimonials />
+
+                    {/* Decor between Testimonials & FAQ */}
+                    <div className="relative h-0 w-full max-w-7xl mx-auto z-20 pointer-events-none">
+                        <Asterisk className="absolute -top-16 left-1/2 w-20 h-20 text-indigo-500/10 animate-spin-slow" />
                     </div>
 
                     <FAQ />

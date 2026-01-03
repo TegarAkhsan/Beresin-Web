@@ -23,6 +23,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Dasar',
                 'price' => 500000, // Example price
                 'description' => 'Cocok untuk landing page atau web sederhana',
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Website statis / dinamis sederhana',
                     'CRUD sederhana',
@@ -36,6 +37,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Menengah',
                 'price' => 1500000,
                 'description' => 'Untuk aplikasi web dengan fitur lengkap',
+                'duration_days' => 7,
                 'features' => json_encode([
                     'Full CRUD kompleks',
                     'Role & permission',
@@ -50,6 +52,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Atas',
                 'price' => 3000000,
                 'description' => 'Sistem kompleks skala besar',
+                'duration_days' => 15,
                 'features' => json_encode([
                     'Sistem multi-role & multi-level',
                     'REST API / Backend service',
@@ -63,6 +66,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Pelajar',
                 'price' => 0,
                 'description' => 'Solusi hemat untuk pelajar/mahasiswa',
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Harga Negotiable',
                     'Fitur Negotiable',
@@ -83,6 +87,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Dasar',
                 'price' => 300000,
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Wireframe low-fidelity',
                     'User flow sederhana',
@@ -92,6 +97,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Menengah',
                 'price' => 800000,
+                'duration_days' => 7,
                 'features' => json_encode([
                     'Wireframe mid-fidelity',
                     'Desain UI (Figma)',
@@ -102,6 +108,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Atas',
                 'price' => 1500000,
+                'duration_days' => 15,
                 'features' => json_encode([
                     'UX research (persona & pain point)',
                     'High-fidelity design',
@@ -114,6 +121,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Pelajar',
                 'price' => 0,
                 'description' => 'Solusi hemat untuk pelajar/mahasiswa',
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Harga Negotiable',
                     'Fitur Negotiable',
@@ -134,6 +142,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Dasar',
                 'price' => 1000000,
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Aplikasi Flutter sederhana',
                     'CRUD lokal / API',
@@ -143,6 +152,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Menengah',
                 'price' => 2500000,
+                'duration_days' => 7,
                 'features' => json_encode([
                     'Auth & role user',
                     'API integration',
@@ -153,6 +163,7 @@ class ServiceSeeder extends Seeder
             [
                 'name' => 'Paket Atas',
                 'price' => 5000000,
+                'duration_days' => 15,
                 'features' => json_encode([
                     'Arsitektur scalable',
                     'Push notification',
@@ -165,6 +176,7 @@ class ServiceSeeder extends Seeder
                 'name' => 'Paket Pelajar',
                 'price' => 0,
                 'description' => 'Solusi hemat untuk pelajar/mahasiswa',
+                'duration_days' => 3,
                 'features' => json_encode([
                     'Harga Negotiable',
                     'Fitur Negotiable',

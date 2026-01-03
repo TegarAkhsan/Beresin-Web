@@ -10,6 +10,7 @@ export default function Create({ auth }) {
         name: '',
         email: '',
         role: 'customer',
+        specialization: '',
         password: '',
         password_confirmation: '',
     });
@@ -81,6 +82,26 @@ export default function Create({ auth }) {
                                 </select>
                                 <InputError message={errors.role} className="mt-2" />
                             </div>
+
+                            {/* Specialization (Only for Joki) */}
+                            {data.role === 'joki' && (
+                                <div className="mt-4">
+                                    <InputLabel htmlFor="specialization" value="Specialization" />
+                                    <select
+                                        id="specialization"
+                                        name="specialization"
+                                        value={data.specialization}
+                                        className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        onChange={(e) => setData('specialization', e.target.value)}
+                                    >
+                                        <option value="">-- Select Specialization --</option>
+                                        <option value="web">Web Development</option>
+                                        <option value="ui/ux">UI/UX Design</option>
+                                        <option value="mobile">Mobile Development</option>
+                                    </select>
+                                    <InputError message={errors.specialization} className="mt-2" />
+                                </div>
+                            )}
 
                             {/* Password */}
                             <div className="mt-4">

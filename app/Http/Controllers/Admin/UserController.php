@@ -44,6 +44,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:admin,joki,customer',
+            'specialization' => 'nullable|string|in:web,ui/ux,mobile', // Validating specialization
         ]);
 
         User::create([
@@ -51,6 +52,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
+            'specialization' => $request->role === 'joki' ? $request->specialization : null,
         ]);
 
         return redirect()->route('admin.users.index')->with('message', 'User created successfully.');
@@ -69,11 +71,16 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'role' => 'required|in:admin,joki,customer',
+            'specialization' => 'nullable|string|in:web,ui/ux,mobile',
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // ... rest of function
-
+        $userData = [
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'specialization' => $request->role === 'joki' ? $request->specialization : null,
+        ];
 
         if ($request->filled('password')) {
             $userData['password'] = Hash::make($request->password);

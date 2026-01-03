@@ -34,6 +34,7 @@ export default function Index({ auth, users, filters }) {
                                 <tr>
                                     <th scope="col" className="px-6 py-3">Name</th>
                                     <th scope="col" className="px-6 py-3">Role</th>
+                                    <th scope="col" className="px-6 py-3">Specialization</th>
                                     <th scope="col" className="px-6 py-3">Email</th>
                                     <th scope="col" className="px-6 py-3">Joined</th>
                                     <th scope="col" className="px-6 py-3">Actions</th>
@@ -53,6 +54,15 @@ export default function Index({ auth, users, filters }) {
                                             `}>
                                                 {user.role.toUpperCase()}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.role === 'joki' && user.specialization ? (
+                                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded border border-purple-200 uppercase">
+                                                    {user.specialization}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400 text-xs">-</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             {user.email}

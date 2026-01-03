@@ -35,13 +35,14 @@ class OrderController extends Controller
             'referral_source' => 'required|string',
 
             // Order Fields
-            'description' => 'nullable|string', // Made optional/nullable based on "Catatan Pesanan"
+            'description' => 'nullable|string',
             'deadline' => 'required|date|after:today',
             'notes' => 'nullable|string',
+            'external_link' => 'nullable|url',
 
             // File Uploads
-            'reference_file' => 'nullable|file|max:10240', // 10MB Max
-            'previous_project_file' => 'nullable|file|max:10240',
+            'reference_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB Max, PDF Only
+            'previous_project_file' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         $user = auth()->user();
@@ -58,6 +59,23 @@ class OrderController extends Controller
 
         $package = Package::find($validated['package_id']);
 
+        // Calculate Fee (Rush Fee Logic)
+        $standardDeadline = now()->addDays($package->duration_days ?? 3);
+        $userDeadline = \Carbon\Carbon::parse($validated['deadline']);
+
+        $amount = $package->price;
+
+        // If user wants it sooner than standard duration (and standard is not in the past)
+        if ($userDeadline->lt($standardDeadline) && $standardDeadline->isFuture()) {
+            $daysSaved = $userDeadline->diffInDays($standardDeadline);
+            // Charge 25k per day saved
+            $rushFee = max(0, ceil($daysSaved) * 25000);
+            $amount += $rushFee;
+        }
+
+        // Add Operational Fee
+        $amount += 5000;
+
         // Handle File Uploads
         $referenceFilePath = null;
         if ($request->hasFile('reference_file')) {
@@ -73,10 +91,11 @@ class OrderController extends Controller
             'order_number' => 'ORD-' . strtoupper(Str::random(10)),
             'user_id' => $user->id,
             'package_id' => $package->id,
-            'amount' => $package->price,
+            'amount' => $amount,
             'description' => $validated['description'] ?? 'No description provided.',
             'deadline' => $validated['deadline'],
             'notes' => $validated['notes'] ?? null,
+            'external_link' => $validated['external_link'] ?? null,
             'reference_file' => $referenceFilePath,
             'previous_project_file' => $projectFilePath,
             'status' => 'pending_payment',
@@ -157,9 +176,15 @@ class OrderController extends Controller
         }
 
         $order->load(['user', 'package.service']);
-        $whatsapp = \App\Models\Setting::where('key', 'whatsapp_number')->value('value');
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact('order', 'whatsapp'));
+        $settings = \App\Models\Setting::whereIn('key', [
+            'whatsapp_number',
+            'invoice_name',
+            'invoice_address',
+            'invoice_logo'
+        ])->pluck('value', 'key');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact('order', 'settings'));
 
         return $pdf->download('Invoice-' . ($order->invoice_number ?? $order->order_number) . '.pdf');
     }
