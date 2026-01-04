@@ -11,8 +11,9 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'services' => App\Models\Service::with('packages')->get(),
         'whatsapp_number' => App\Models\Setting::where('key', 'whatsapp_number')->value('value'),
+        'footer_settings' => App\Models\Setting::whereIn('key', ['instagram_url', 'email_contact', 'footer_description', 'whatsapp_number'])->pluck('value', 'key'),
     ]);
-});
+})->name('home');
 
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -45,6 +46,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // Settings
     Route::get('/settings', [App\Http\Controllers\Admin\AdminSettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [App\Http\Controllers\Admin\AdminSettingController::class, 'update'])->name('settings.update');
+
+    // Admin Chat
+    Route::get('/chat', [App\Http\Controllers\ChatController::class, 'adminIndex'])->name('chat.index');
+    Route::get('/chat/{user}', [App\Http\Controllers\ChatController::class, 'adminShow'])->name('chat.show');
+    Route::post('/chat/{user}', [App\Http\Controllers\ChatController::class, 'adminStore'])->name('chat.reply');
 });
 
 Route::middleware('auth')->group(function () {
@@ -63,6 +69,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/joki/orders/{order}/start', [App\Http\Controllers\JokiDashboardController::class, 'startTask'])->name('joki.orders.start');
     Route::post('/joki/orders/{order}/upload', [App\Http\Controllers\JokiDashboardController::class, 'uploadResult'])->name('joki.orders.upload');
     Route::post('/joki/orders/{order}/link', [App\Http\Controllers\JokiDashboardController::class, 'updateLink'])->name('joki.orders.link');
+
+    // Chat Routes (Customer)
+    Route::get('/chat/messages', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
 });
 
 require __DIR__ . '/auth.php';

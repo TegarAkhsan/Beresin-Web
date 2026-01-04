@@ -13,16 +13,24 @@ import PrimaryButton from '@/Components/PrimaryButton'; // Import PrimaryButton
 import SecondaryButton from '@/Components/SecondaryButton'; // Import SecondaryButton
 import { useState, useEffect } from 'react'; // Import hooks
 import Testimonials from '@/Components/Landing/Testimonials'; // Import Testimonials
+import ChatWidget from '@/Components/ChatWidget'; // Import ChatWidget
+import { Link } from '@inertiajs/react'; // Import Link for the modal button
 
-export default function Welcome({ auth, canLogin, canRegister, services, whatsapp_number }) {
+export default function Welcome({ auth, canLogin, canRegister, services, whatsapp_number, footer_settings }) {
     const { flash } = usePage().props;
-    const [showDashboardModal, setShowDashboardModal] = useState(false);
+    const [showDashboardPrompt, setShowDashboardPrompt] = useState(false);
 
     useEffect(() => {
+        // Only show if flash prompt exists AND we haven't shown it recently (session check)
+        // Actually, to be safer for "Back" button, we trust the session storage more.
         if (flash?.show_dashboard_prompt) {
-            setShowDashboardModal(true);
+            const hasSeen = sessionStorage.getItem('welcome_modal_shown_session_' + auth?.user?.id);
+            if (!hasSeen) {
+                setShowDashboardPrompt(true);
+                sessionStorage.setItem('welcome_modal_shown_session_' + auth?.user?.id, 'true');
+            }
         }
-    }, [flash]);
+    }, [flash, auth]);
 
     return (
         <>
@@ -31,32 +39,50 @@ export default function Welcome({ auth, canLogin, canRegister, services, whatsap
 
                 <Navbar auth={auth} canLogin={canLogin} canRegister={canRegister} />
 
-                {/* Dashboard Prompt Modal */}
-                <Modal show={showDashboardModal} onClose={() => setShowDashboardModal(false)}>
-                    <div className="p-6 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome Back, {auth.user?.name}! 👋</h2>
-                        <p className="text-gray-600 mb-8">
-                            You have successfully logged in. Where would you like to go next?
+                {/* Dashboard Prompt Modal - Dark Theme */}
+                <Modal show={showDashboardPrompt} onClose={() => setShowDashboardPrompt(false)} maxWidth="md">
+                    <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl relative overflow-hidden">
+                        {/* Background Glow */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px]"></div>
+
+                        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl rotate-3 flex items-center justify-center shadow-2xl mb-6 relative z-10">
+                            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        </div>
+
+                        <h2 className="text-3xl font-black text-white mb-2 relative z-10 tracking-tight">
+                            Welcome Back!
+                        </h2>
+
+                        <p className="text-indigo-300 font-bold uppercase tracking-widest text-xs mb-6 relative z-10">
+                            {auth?.user?.name || 'CHAMPION'}
                         </p>
-                        <div className="flex flex-col gap-3 justify-center">
-                            <PrimaryButton
-                                onClick={() => window.location.href = route('dashboard')}
-                                className="w-full justify-center py-4 text-base"
+
+                        <p className="text-slate-400 mb-8 relative z-10 leading-relaxed">
+                            You have successfully logged in.<br />
+                            Ready to level up your project?
+                        </p>
+
+                        <div className="flex flex-col gap-3 relative z-10">
+                            <Link
+                                href={route('dashboard')}
+                                className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold hover:bg-indigo-50 transition shadow-lg hover:shadow-xl hover:-translate-y-1 block"
                             >
-                                Go to Dashboard 🚀
-                            </PrimaryButton>
-                            <SecondaryButton
-                                onClick={() => setShowDashboardModal(false)}
-                                className="w-full justify-center py-4 text-base"
+                                GO TO DASHBOARD &rarr;
+                            </Link>
+                            <button
+                                onClick={() => setShowDashboardPrompt(false)}
+                                className="text-slate-500 hover:text-white text-sm font-medium py-2 transition"
                             >
                                 Stay on Homepage
-                            </SecondaryButton>
+                            </button>
                         </div>
                     </div>
                 </Modal>
 
                 <main className="relative">
-                    <Hero />
+                    <Hero auth={auth} />
+
+                    {/* ... existing content ... */}
 
                     {/* Decor between Hero & Features */}
                     <div className="relative h-0 w-full max-w-7xl mx-auto z-20 pointer-events-none">
@@ -105,7 +131,10 @@ export default function Welcome({ auth, canLogin, canRegister, services, whatsap
                     <CTA />
                 </main>
 
-                <Footer />
+                <Footer settings={footer_settings} />
+
+                {/* Chat Widget */}
+                <ChatWidget auth={auth} />
             </div>
 
             <style>{`
@@ -125,13 +154,20 @@ export default function Welcome({ auth, canLogin, canRegister, services, whatsap
                     animation: fadeInUp 0.3s ease-out forwards;
                 }
                 @keyframes float {
-                    0%, 100% { transform: translateY(0); }
+                    0% { transform: translateY(0); }
                     50% { transform: translateY(-10px); }
+                    100% { transform: translateY(0); }
                 }
                 .animate-float {
                     animation: float 4s ease-in-out infinite;
+                }
+                /* Custom text outline */
+                .text-stroke {
+                    -webkit-text-stroke: 1px rgba(0,0,0,0.1);
+                    color: transparent;
                 }
             `}</style>
         </>
     );
 }
+

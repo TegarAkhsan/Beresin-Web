@@ -12,12 +12,22 @@ export default function Navbar({ auth, canLogin, canRegister }) {
                     {canLogin && (
                         <>
                             {auth.user ? (
-                                <Link
-                                    href={route('dashboard')}
-                                    className="px-6 py-2 rounded-full font-bold border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition"
-                                >
-                                    Dashboard
-                                </Link>
+                                <>
+                                    <Link
+                                        href={route('dashboard')}
+                                        className="px-6 py-2 rounded-full font-bold border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                    <Link
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        className="px-6 py-2 rounded-full font-bold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition"
+                                    >
+                                        Log Out
+                                    </Link>
+                                </>
                             ) : (
                                 <>
                                     <Link

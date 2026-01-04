@@ -50,20 +50,6 @@ export default function Dashboard({ auth, stats, joki_workload }) {
                         )}
                     </div>
                 </div>
-
-                {/* Coming Soon / Updates Placeholder */}
-                <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-lg p-6 text-white flex flex-col justify-between relative overflow-hidden">
-                    <div className="relative z-10">
-                        <h3 className="text-lg font-bold mb-2">Admin Pro Features</h3>
-                        <p className="text-indigo-100 text-sm mb-6">Advanced analytics and automated reports are coming soon to Beresin.</p>
-                        <button className="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg text-sm font-semibold transition">
-                            Learn More
-                        </button>
-                    </div>
-                    {/* Decorative Circles */}
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
-                    <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
-                </div>
             </div>
         </AdminLayout>
     );

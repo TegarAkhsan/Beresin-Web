@@ -1,8 +1,21 @@
 import Toast from '@/Components/Toast';
+import { usePage, Link } from '@inertiajs/react';
+import NavLink from '@/Components/NavLink';
+import Dropdown from '@/Components/Dropdown';
 
 export default function AdminLayout({ user, header, children }) {
     const { url } = usePage();
-    // ... existing code ...
+
+    const navigation = [
+        { name: 'Dashboard', href: '/admin', active: route().current('admin.dashboard') },
+        { name: 'Users', href: route('admin.users.index'), active: route().current('admin.users.*') },
+        { name: 'Services', href: route('admin.services.index'), active: route().current('admin.services.*') },
+        { name: 'Assign Task', href: route('admin.orders.assign'), active: route().current('admin.orders.assign') },
+        { name: 'Chats', href: route('admin.chat.index'), active: route().current('admin.chat.*') },
+        { name: 'Verify Orders', href: route('admin.orders.verify'), active: route().current('admin.orders.verify') },
+        { name: 'Transactions', href: route('admin.transactions.index'), active: route().current('admin.transactions.*') },
+        { name: 'Settings', href: route('admin.settings.index'), active: route().current('admin.settings.*') },
+    ];
 
     return (
         <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-900 flex">
@@ -51,9 +64,7 @@ export default function AdminLayout({ user, header, children }) {
                 {/* Header - Minimalist */}
                 <header className="bg-white/80 backdrop-blur-md sticky top-0 z-20 h-20 flex items-center justify-between px-8 border-b border-gray-100">
                     <div className="flex items-center gap-4">
-                        <h2 className="font-bold text-xl text-gray-900 tracking-tight">
-                            {header}
-                        </h2>
+                        {/* Top Menu Removed as requested */}
                     </div>
 
                     <div className="flex items-center gap-4">
