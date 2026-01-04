@@ -93,6 +93,27 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                 {/* OVERVIEW CONTENT */}
                 {activeTab === 'overview' && (
                     <div className="space-y-10 animate-fade-in-up relative z-10">
+                        {/* ACTION NEEDED BANNER */}
+                        {orders.some(o => o.status === 'review') && (
+                            <div className="bg-purple-100 border-2 border-purple-600 rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between shadow-[6px_6px_0px_0px_rgba(147,51,234,1)]">
+                                <div className="flex items-center gap-4 mb-4 md:mb-0">
+                                    <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-2xl animate-pulse">
+                                        !
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-purple-900">Hasil Pekerjaan Siap Direview!</h3>
+                                        <p className="text-purple-700 font-medium">Joki telah mengupload hasil pekerjaan. Silakan cek dan berikan feedback.</p>
+                                    </div>
+                                </div>
+                                <Link
+                                    href={route('orders.review', orders.find(o => o.status === 'review').id)}
+                                    className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl border-2 border-purple-900 hover:bg-purple-700 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]"
+                                >
+                                    Review Hasil Sekarang &rarr;
+                                </Link>
+                            </div>
+                        )}
+
                         {/* Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {[
@@ -186,9 +207,11 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                                                     <span className={`px-3 py-1 text-xs font-black rounded-lg border-2 
                                                         ${order.status === 'completed' ? 'bg-green-100 text-green-700 border-green-700' :
                                                             order.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-700' :
-                                                                order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-700' :
-                                                                    'bg-yellow-100 text-yellow-700 border-yellow-700'}`}>
-                                                        {order.status.replace('_', ' ').toUpperCase()}
+                                                                order.status === 'review' ? 'bg-purple-100 text-purple-700 border-purple-700' :
+                                                                    order.status === 'revision' ? 'bg-orange-100 text-orange-700 border-orange-700' :
+                                                                        order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-700' :
+                                                                            'bg-yellow-100 text-yellow-700 border-yellow-700'}`}>
+                                                        {order.status === 'review' ? 'REVIEW NEEDED' : order.status.replace('_', ' ').toUpperCase()}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 font-bold text-slate-900">
@@ -201,7 +224,12 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                                                 </td>
                                                 <td className="px-8 py-5">
                                                     <div className="flex items-center space-x-3">
-                                                        <Link href={route('orders.show', order.id)} className="font-bold text-slate-900 underline hover:text-blue-600">
+                                                        {order.status === 'review' && (
+                                                            <Link href={route('orders.review', order.id)} className="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded border-2 border-purple-900 hover:bg-purple-700 shadow-[2px_2px_0px_0px_rgba(88,28,135,1)] transition-transform hover:-translate-y-0.5">
+                                                                REVIEW!
+                                                            </Link>
+                                                        )}
+                                                        <Link href={route('orders.show', order.id)} className="font-bold text-xs text-slate-900 underline hover:text-blue-600">
                                                             Detail
                                                         </Link>
                                                         {order.status === 'pending_payment' && (

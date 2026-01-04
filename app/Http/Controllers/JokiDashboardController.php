@@ -24,7 +24,7 @@ class JokiDashboardController extends Controller
         // Active Workspace: Work started
         $activeTasks = Order::with(['package.service', 'user', 'chats', 'files'])
             ->where('joki_id', $user->id)
-            ->whereIn('status', ['in_progress', 'review'])
+            ->whereIn('status', ['in_progress', 'review', 'revision'])
             ->whereNotNull('started_at')
             ->latest('started_at')
             ->get();
@@ -33,6 +33,12 @@ class JokiDashboardController extends Controller
         $reviewTasks = Order::with(['package.service', 'user'])
             ->where('joki_id', $user->id)
             ->where('status', 'review')
+            ->get();
+
+        $completedTasks = Order::with(['package.service', 'user', 'review'])
+            ->where('joki_id', $user->id)
+            ->where('status', 'completed')
+            ->latest()
             ->get();
 
         // 2. Workload & Health Indicator
@@ -45,7 +51,7 @@ class JokiDashboardController extends Controller
         }
 
         // 3. Earnings (Mocked based on order amount for now)
-        $completedOrders = Order::where('joki_id', $user->id)->where('status', 'completed')->get();
+        $completedOrders = $completedTasks;
         $totalEarnings = $completedOrders->sum('amount'); // Assuming 100% for now
         $heldEarnings = $activeTasks->sum('amount');
 
@@ -66,6 +72,7 @@ class JokiDashboardController extends Controller
             'upcomingTasks' => $upcomingTasks,
             'activeTasks' => $activeTasks,
             'reviewTasks' => $reviewTasks,
+            'completedTasks' => $completedTasks,
             'stats' => [
                 'workload_status' => $workloadStatus,
                 'total_earnings' => $totalEarnings,
@@ -113,8 +120,11 @@ class JokiDashboardController extends Controller
             'note' => $request->note
         ]);
 
-        // Also update main result_file for backward compatibility
-        $order->update(['result_file' => $path]);
+        // Also update main result_file for backward compatibility and set status to review
+        $order->update([
+            'result_file' => $path,
+            'status' => 'review'
+        ]);
 
         return back()->with('message', 'File uploaded successfully.');
     }

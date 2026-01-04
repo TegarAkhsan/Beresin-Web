@@ -120,6 +120,23 @@ class OrderController extends Controller
         ]);
     }
 
+    public function review(Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if (!in_array($order->status, ['review', 'completed', 'revision']) && !$order->result_file) {
+            return redirect()->route('orders.show', $order);
+        }
+
+        $order->load(['package.service', 'joki', 'user', 'files']);
+
+        return Inertia::render('Orders/Review', [
+            'order' => $order,
+        ]);
+    }
+
     public function update(Request $request, Order $order)
     {
         if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin' && auth()->user()->role !== 'joki') {
@@ -187,5 +204,49 @@ class OrderController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', compact('order', 'settings'));
 
         return $pdf->download('Invoice-' . ($order->invoice_number ?? $order->order_number) . '.pdf');
+    }
+
+    public function acceptResult(Request $request, Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string'
+        ]);
+
+        $order->update([
+            'status' => 'completed',
+            'completed_at' => now()
+        ]);
+
+        \App\Models\Review::create([
+            'order_id' => $order->id,
+            'user_id' => auth()->id(),
+            'rating' => $validated['rating'],
+            'comment' => $validated['comment']
+        ]);
+
+        return back()->with('message', 'Order completed! Thank you for your feedback.');
+    }
+
+    public function requestRevision(Request $request, Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000'
+        ]);
+
+        $order->update([
+            'status' => 'revision',
+            'revision_reason' => $request->input('reason'),
+        ]);
+
+        return back()->with('message', 'Revision requested. The Joki has been notified.');
     }
 }

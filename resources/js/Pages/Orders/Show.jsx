@@ -1,7 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import PrimaryButton from '@/Components/PrimaryButton';
-
+import SecondaryButton from '@/Components/SecondaryButton';
+import Modal from '@/Components/Modal';
+import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
 import { useState, useEffect } from 'react';
 
 export default function Show({ auth, order, whatsapp_number }) {
@@ -11,9 +14,20 @@ export default function Show({ auth, order, whatsapp_number }) {
         status: order.status,
     });
 
+    const { data: ratingData, setData: setRatingData, post: postRating, processing: ratingProcessing } = useForm({
+        rating: 5,
+        comment: ''
+    });
+
+    const { data: revisionData, setData: setRevisionData, post: postRevision, processing: revisionProcessing } = useForm({
+        reason: ''
+    });
+
     const [timeLeft, setTimeLeft] = useState(0);
     const [paymentMethod, setPaymentMethod] = useState('va'); // 'va' or 'qris'
     const [selectedBank, setSelectedBank] = useState('bca');
+    const [showAcceptModal, setShowAcceptModal] = useState(false);
+    const [showRevisionModal, setShowRevisionModal] = useState(false);
 
     useEffect(() => {
         // Countdown Logic (3 hours from created_at)
@@ -65,9 +79,36 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
         });
     };
 
-    const uploadResult = (e) => {
+    const handleAccept = (e) => {
         e.preventDefault();
-        post(route('orders.update', order.id));
+        postRating(route('orders.accept', order.id), {
+            onSuccess: () => setShowAcceptModal(false)
+        });
+    };
+
+    const handleRevision = (e) => {
+        e.preventDefault();
+        postRevision(route('orders.revision', order.id), {
+            onSuccess: () => setShowRevisionModal(false)
+        });
+    };
+
+    // Rating Stars Helper
+    const StarRating = ({ rating, setRating }) => {
+        return (
+            <div className="flex space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className={`text-2xl focus:outline-none ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                    >
+                        ★
+                    </button>
+                ))}
+            </div>
+        );
     };
 
     return (
@@ -80,8 +121,13 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                     {/* TOP STATUS BAR */}
                     <div className="bg-white rounded-xl shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-4">
-                            <div className={`px-4 py-2 rounded-full font-bold text-sm uppercase ${order.status === 'pending_payment' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-                                {order.status.replace('_', ' ')}
+                            <div className={`px-4 py-2 rounded-full font-bold text-sm uppercase ${order.status === 'pending_payment' ? 'bg-orange-100 text-orange-600' :
+                                order.status === 'completed' ? 'bg-green-100 text-green-600' :
+                                    order.status === 'review' ? 'bg-purple-100 text-purple-600' :
+                                        order.status === 'revision' ? 'bg-red-100 text-red-600' :
+                                            'bg-blue-100 text-blue-600'
+                                }`}>
+                                {order.status === 'review' ? 'Waiting Your Review' : order.status.replace('_', ' ')}
                             </div>
                             {order.status === 'pending_payment' && (
                                 <div className="text-red-500 font-bold flex items-center gap-2">
@@ -97,9 +143,11 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
-                        {/* LEFT: PAYMENT INSTRUCTIONS (Shown only if pending) */}
+                        {/* LEFT: MAIN CONTENT */}
                         <div className="md:col-span-2 space-y-6">
-                            {order.status === 'pending_payment' ? (
+
+                            {/* PENDING PAYMENT */}
+                            {order.status === 'pending_payment' && (
                                 <div className="bg-white rounded-xl shadow-sm p-6">
                                     <h3 className="text-lg font-bold text-gray-900 mb-6 border-b pb-4">Payment Instructions</h3>
 
@@ -205,9 +253,11 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                         </form>
                                     </div>
                                 </div>
-                            ) : (
-                                /* IF NOT PENDING PAYMENT */
-                                <div className="bg-white rounded-xl shadow-sm p-6">
+                            )}
+
+                            {/* COMPLETED / REVIEW / REVISION / IN_PROGRESS */}
+                            {order.status !== 'pending_payment' && (
+                                <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
                                     <div className="bg-green-50 p-6 rounded-xl border border-green-200 text-center">
                                         <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
                                             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
@@ -216,12 +266,42 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                         <p className="text-gray-600">Your order is being processed by our team.</p>
                                     </div>
 
+                                    {/* Result Section */}
                                     {order.result_file && (
-                                        <div className="mt-6 bg-indigo-50 p-6 rounded-xl border border-indigo-200 text-center">
-                                            <h3 className="font-bold text-indigo-900 mb-2">Result Ready!</h3>
-                                            <a href={`/storage/${order.result_file}`} target="_blank" className="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full font-bold hover:bg-indigo-700 transition-colors">
-                                                Download Result 📂
-                                            </a>
+                                        <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-200">
+                                            <div className="text-center mb-6">
+                                                <h3 className="font-bold text-indigo-900 mb-2 text-lg">Result Available!</h3>
+                                                <p className="text-gray-600 text-sm mb-4">Please download and review your result below.</p>
+                                                <a href={`/storage/${order.result_file}`} target="_blank" className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-full font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                                    Download Result 📂
+                                                </a>
+                                            </div>
+
+                                            {/* Review Actions */}
+                                            {(order.status === 'review' || (order.status === 'in_progress' && order.result_file)) && (
+                                                <div className="border-t border-indigo-200 pt-6 mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                                                    <SecondaryButton onClick={() => setShowRevisionModal(true)} className="justify-center border-red-200 text-red-600 hover:bg-red-50">
+                                                        Request Revision
+                                                    </SecondaryButton>
+                                                    <PrimaryButton onClick={() => setShowAcceptModal(true)} className="justify-center bg-emerald-600 hover:bg-emerald-700 shadow-md">
+                                                        Accept & Rate (Done)
+                                                    </PrimaryButton>
+                                                </div>
+                                            )}
+
+                                            {order.status === 'revision' && (
+                                                <div className="bg-orange-100 p-4 rounded-lg mt-4 text-center border border-orange-200">
+                                                    <p className="text-orange-800 font-bold">Revision Requested</p>
+                                                    <p className="text-sm text-orange-700">Waiting for Joki to upload revision.</p>
+                                                </div>
+                                            )}
+
+                                            {order.status === 'completed' && (
+                                                <div className="bg-green-100 p-4 rounded-lg mt-4 text-center border border-green-200">
+                                                    <p className="text-green-800 font-bold">Order Completed</p>
+                                                    <p className="text-sm text-green-700">Thank you for ordering!</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -258,6 +338,57 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                     </div>
                 </div>
             </div>
+
+            {/* Accept Modal */}
+            <Modal show={showAcceptModal} onClose={() => setShowAcceptModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Rate & Complete</h2>
+                    <p className="text-gray-600 mb-6">Are you satisfied with the result? Please leave a rating.</p>
+                    <form onSubmit={handleAccept}>
+                        <div className="mb-6 flex justify-center">
+                            <StarRating rating={ratingData.rating} setRating={(r) => setRatingData('rating', r)} />
+                        </div>
+                        <div className="mb-6">
+                            <InputLabel value="Comment (Optional)" />
+                            <TextInput
+                                className="w-full mt-1"
+                                value={ratingData.comment}
+                                onChange={e => setRatingData('comment', e.target.value)}
+                                placeholder="Great work!"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <SecondaryButton onClick={() => setShowAcceptModal(false)}>Cancel</SecondaryButton>
+                            <PrimaryButton disabled={ratingProcessing} className="bg-emerald-600">Confirm Completion</PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
+
+            {/* Revision Modal */}
+            <Modal show={showRevisionModal} onClose={() => setShowRevisionModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-2xl font-bold text-red-600 mb-4">Request Revision</h2>
+                    <p className="text-gray-600 mb-6">What needs to be improved? Please be specific.</p>
+                    <form onSubmit={handleRevision}>
+                        <div className="mb-6">
+                            <InputLabel value="Revision Note" />
+                            <textarea
+                                className="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                rows="4"
+                                value={revisionData.reason}
+                                onChange={e => setRevisionData('reason', e.target.value)}
+                                placeholder="Please fix..."
+                                required
+                            ></textarea>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <SecondaryButton onClick={() => setShowRevisionModal(false)}>Cancel</SecondaryButton>
+                            <PrimaryButton disabled={revisionProcessing} className="bg-red-600 hover:bg-red-700">Submit Request</PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

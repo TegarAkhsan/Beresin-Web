@@ -10,8 +10,9 @@ import JokiSidebar from './Joki/JokiSidebar';
 import DashboardTab from './Joki/DashboardTab';
 import TasksTab from './Joki/TasksTab';
 import EarningsTab from './Joki/EarningsTab';
+import CompletedTab from './Joki/CompletedTab';
 
-export default function JokiDashboard({ auth, upcomingTasks, activeTasks, reviewTasks, stats }) {
+export default function JokiDashboard({ auth, upcomingTasks, activeTasks, reviewTasks, completedTasks = [], stats }) {
     // Tab state management
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -201,6 +202,10 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                             />
                         )}
 
+                        {activeTab === 'completed' && (
+                            <CompletedTab completedTasks={completedTasks} />
+                        )}
+
                         {activeTab === 'earnings' && (
                             <EarningsTab stats={stats} />
                         )}
@@ -210,46 +215,128 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
             {/* MODALS */}
 
-            {/* 1. Preview Modal */}
-            <Modal show={showPreviewModal} onClose={closePreviewModal}>
+            <Modal show={showPreviewModal} onClose={closePreviewModal} maxWidth="2xl">
                 <div className="p-6">
                     {previewTask && (
                         <>
+                            {/* Header */}
                             <div className="flex justify-between items-start mb-6 pb-6 border-b border-gray-100">
                                 <div>
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Job Opportunity</span>
-                                    <h2 className="text-2xl font-bold text-gray-800 mt-1">{previewTask.package?.name}</h2>
-                                    <p className="text-indigo-600 font-medium text-sm mt-1">{previewTask.package?.service?.name}</p>
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        Order #{previewTask.order_number || previewTask.id}
+                                    </span>
+                                    <h2 className="text-2xl font-bold text-gray-800 mt-1">{previewTask.package?.name || 'Custom Package'}</h2>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            {previewTask.package?.service?.name || 'Service'}
+                                        </span>
+                                        <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-orange-50 text-orange-700 border border-orange-100 flex items-center gap-1">
+                                            <span>📅</span>
+                                            Deadline: {new Date(previewTask.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="block text-2xl font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(previewTask.amount)}</span>
+                                    <span className="block text-2xl font-bold text-emerald-600">
+                                        Rp {new Intl.NumberFormat('id-ID').format(previewTask.amount)}
+                                    </span>
+                                    <span className="text-xs text-gray-400 font-medium">Potential Earnings</span>
                                 </div>
                             </div>
 
-                            <div className="bg-gray-50 rounded-xl p-5 mb-6 border border-gray-100">
-                                <h3 className="font-bold text-gray-700 text-sm mb-3 uppercase tracking-wide">Client Brief</h3>
-                                <p className="text-gray-600 text-sm leading-7 whitespace-pre-wrap">
-                                    {previewTask.description}
-                                </p>
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                {/* Left Column: Brief & Data */}
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                                        <h3 className="font-bold text-gray-700 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                                            <span>📝</span> Client Brief
+                                        </h3>
+                                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto">
+                                            {previewTask.description || 'No specific description provided.'}
+                                        </p>
+                                    </div>
+
+                                    {/* Customer Assets */}
+                                    {(previewTask.external_link || previewTask.reference_file) && (
+                                        <div className="bg-blue-50 rounded-xl p-5 border border-blue-100">
+                                            <h3 className="font-bold text-blue-800 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                                                <span>📂</span> Customer Assets
+                                            </h3>
+                                            <div className="space-y-3">
+                                                {previewTask.external_link && (
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-blue-500 mt-0.5">🔗</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-blue-600 font-bold uppercase mb-0.5">Reference URL</p>
+                                                            <a href={previewTask.external_link} target="_blank" rel="noreferrer" className="text-sm text-gray-700 underline hover:text-blue-700 break-all line-clamp-1 block">
+                                                                {previewTask.external_link}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {previewTask.reference_file && (
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="text-blue-500 mt-0.5">📎</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs text-blue-600 font-bold uppercase mb-0.5">Attachment</p>
+                                                            <a href={previewTask.reference_file.startsWith('http') ? previewTask.reference_file : `/storage/${previewTask.reference_file}`} target="_blank" rel="noreferrer" className="text-sm text-gray-700 underline hover:text-blue-700 break-all line-clamp-1 block">
+                                                                Download File
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Right Column: Features */}
+                                <div>
+                                    <div className="bg-indigo-50 rounded-xl p-5 border border-indigo-100 h-full">
+                                        <h3 className="font-bold text-indigo-800 text-xs uppercase tracking-wide mb-3 flex items-center gap-2">
+                                            <span>⚡</span> Package Includes
+                                        </h3>
+                                        <ul className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                                            {(() => {
+                                                let features = previewTask.package?.features;
+                                                if (typeof features === 'string') {
+                                                    try { features = JSON.parse(features); } catch (e) { features = []; }
+                                                }
+
+                                                if (Array.isArray(features) && features.length > 0) {
+                                                    return features.map((feature, index) => (
+                                                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700 bg-white/60 p-2 rounded-lg border border-indigo-50">
+                                                            <span className="text-indigo-600 font-bold min-w-[16px]">✓</span>
+                                                            <span className="leading-snug">{feature}</span>
+                                                        </li>
+                                                    ));
+                                                } else {
+                                                    return (
+                                                        <li className="text-sm text-gray-400 italic text-center py-4">
+                                                            No specific features data available.
+                                                        </li>
+                                                    );
+                                                }
+                                            })()}
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
 
-                            {/* Features in Preview */}
-                            <div className="mb-6">
-                                <h3 className="font-bold text-gray-700 text-sm mb-3 uppercase tracking-wide">Package Features</h3>
-                                <ul className="grid grid-cols-2 gap-2">
-                                    {previewTask.package?.features?.map((feature, index) => (
-                                        <li key={index} className="text-sm text-gray-600 flex items-center gap-2">
-                                            <span className="text-green-500">✓</span> {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="flex justify-end gap-3">
-                                <SecondaryButton onClick={closePreviewModal}>Cancel</SecondaryButton>
-                                <PrimaryButton onClick={handleAcceptTask} className="bg-emerald-600 hover:bg-emerald-700">
-                                    Accept Assignment
-                                </PrimaryButton>
+                            {/* Footer Actions */}
+                            <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+                                <div className="text-xs text-gray-400">
+                                    Make sure to read the brief carefully before accepting.
+                                </div>
+                                <div className="flex gap-3">
+                                    <SecondaryButton onClick={closePreviewModal}>
+                                        Cancel
+                                    </SecondaryButton>
+                                    <PrimaryButton onClick={handleAcceptTask} className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 border-0">
+                                        Accept & Start Job
+                                    </PrimaryButton>
+                                </div>
                             </div>
                         </>
                     )}
@@ -301,15 +388,25 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                                         <h4 className="text-xs font-bold text-indigo-600 uppercase mb-3">Included Features</h4>
                                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {Array.isArray(detailTask.package?.features) && detailTask.package.features.map((feature, idx) => (
-                                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 bg-white p-2 rounded border border-indigo-100 shadow-sm">
-                                                    <span className="text-indigo-500 mt-0.5">✓</span>
-                                                    <span className="leading-tight">{feature}</span>
-                                                </li>
-                                            ))}
-                                            {(!Array.isArray(detailTask.package?.features) || detailTask.package.features.length === 0) && (
-                                                <li className="text-sm text-gray-400 italic">No specific features listed for this package.</li>
-                                            )}
+                                            {(() => {
+                                                let features = detailTask.package?.features;
+                                                if (typeof features === 'string') {
+                                                    try { features = JSON.parse(features); } catch (e) { features = []; }
+                                                }
+
+                                                if (Array.isArray(features) && features.length > 0) {
+                                                    return features.map((feature, idx) => (
+                                                        <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 bg-white p-2 rounded border border-indigo-100 shadow-sm">
+                                                            <span className="text-indigo-500 mt-0.5">✓</span>
+                                                            <span className="leading-tight">{feature}</span>
+                                                        </li>
+                                                    ));
+                                                } else {
+                                                    return (
+                                                        <li className="text-sm text-gray-400 italic">No specific features listed for this package.</li>
+                                                    );
+                                                }
+                                            })()}
                                         </ul>
                                     </div>
                                 </div>

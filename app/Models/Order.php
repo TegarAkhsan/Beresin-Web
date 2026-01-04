@@ -32,7 +32,8 @@ class Order extends Model
         'external_link',
         'reference_file',
         'previous_project_file',
-        'joki_fee'
+        'joki_fee',
+        'revision_reason'
     ];
 
     protected $casts = [

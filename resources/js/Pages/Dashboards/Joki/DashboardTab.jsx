@@ -26,6 +26,82 @@ const StatCard = ({ title, value, subtitle, icon, color }) => {
 };
 
 export default function DashboardTab({ user, stats, activeTasks, openDetailModal, openUploadModal, CountdownTimer }) {
+
+    const renderTask = (task) => {
+        const isRevision = task.status === 'revision';
+        const isReview = task.status === 'review';
+
+        return (
+            <div key={task.id} className={`p-6 transition-colors flex flex-col md:flex-row gap-6 ${isRevision ? 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500' : 'hover:bg-gray-50 border-l-4 border-transparent'}`}>
+                <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-white text-gray-600 border border-gray-200">
+                            #{task.order_number}
+                        </span>
+                        <span className="text-sm text-indigo-600 font-medium">
+                            {task.package?.service?.name}
+                        </span>
+                        {isRevision && <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded uppercase animate-pulse">Action Required</span>}
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        {task.package?.name}
+                    </h3>
+                    <p className="text-sm text-gray-500 line-clamp-1 mb-4">
+                        Client: {task.user?.name}
+                    </p>
+
+                    {isRevision && task.revision_reason && (
+                        <div className="mb-4 bg-white/60 p-4 rounded-lg border border-red-200">
+                            <h4 className="text-xs font-black text-red-700 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
+                                Customer Note
+                            </h4>
+                            <p className="text-gray-800 text-sm italic">"{task.revision_reason}"</p>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => openDetailModal(task)}
+                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                            View Details
+                        </button>
+                        {task.status !== 'review' && (
+                            <>
+                                <span className="text-gray-300">|</span>
+                                <button
+                                    onClick={() => openUploadModal(task)}
+                                    className={`text-sm font-semibold hover:underline ${isRevision ? 'text-red-600 hover:text-red-800' : 'text-gray-600 hover:text-gray-900'}`}
+                                >
+                                    {isRevision ? 'Upload Revision' : 'Upload Result'}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <div className="flex flex-col items-end justify-center min-w-[150px]">
+                    <div className="text-right">
+                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Deadline</p>
+                        {CountdownTimer && <CountdownTimer deadline={task.deadline} />}
+                    </div>
+                    <div className="mt-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            ${isRevision ? 'bg-red-100 text-red-800' :
+                                isReview ? 'bg-purple-100 text-purple-800' :
+                                    'bg-blue-100 text-blue-800'}`}>
+                            {isRevision ? 'Revision Requested' : isReview ? 'In Review' : 'In Progress'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const revisions = activeTasks.filter(t => t.status === 'revision');
+    const inProgress = activeTasks.filter(t => t.status === 'in_progress');
+    const inReview = activeTasks.filter(t => t.status === 'review');
+
     return (
         <div className="space-y-8 animate-fade-in-up">
             <header>
@@ -70,10 +146,12 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
             {/* Active Tasks List */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-900">Active Tasks</h2>
-                    <span className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full">
-                        {activeTasks.length} Pending
-                    </span>
+                    <h2 className="text-xl font-bold text-gray-900">Current Tasks</h2>
+                    <div className="flex gap-2">
+                        {revisions.length > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">{revisions.length} Revisions</span>}
+                        {inProgress.length > 0 && <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">{inProgress.length} In Progress</span>}
+                        {inReview.length > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">{inReview.length} In Review</span>}
+                    </div>
                 </div>
 
                 <div className="divide-y divide-gray-50">
@@ -84,53 +162,30 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                             <p className="text-gray-500">You have no active tasks at the moment.</p>
                         </div>
                     ) : (
-                        activeTasks.map(task => (
-                            <div key={task.id} className="p-6 hover:bg-gray-50 transition-colors flex flex-col md:flex-row gap-6">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-600">
-                                            #{task.order_number}
-                                        </span>
-                                        <span className="text-sm text-indigo-600 font-medium">
-                                            {task.package?.service?.name}
-                                        </span>
+                        <>
+                            {revisions.length > 0 && (
+                                <div className="bg-red-50/50">
+                                    <div className="px-6 py-2 bg-red-100/50 text-red-800 text-xs font-black uppercase tracking-widest border-l-4 border-red-500">
+                                        Action Required: Revisions
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-2">
-                                        {task.package?.name}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 line-clamp-1 mb-4">
-                                        Client: {task.user?.name}
-                                    </p>
+                                    {revisions.map(renderTask)}
+                                </div>
+                            )}
 
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            onClick={() => openDetailModal(task)}
-                                            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
-                                        >
-                                            View Details
-                                        </button>
-                                        <span className="text-gray-300">|</span>
-                                        <button
-                                            onClick={() => openUploadModal(task)}
-                                            className="text-sm font-semibold text-gray-600 hover:text-gray-900 hover:underline"
-                                        >
-                                            Upload Result
-                                        </button>
-                                    </div>
+                            {inProgress.length > 0 && (
+                                <div>
+                                    {revisions.length > 0 && <div className="px-6 py-2 bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-widest">Active Jobs</div>}
+                                    {inProgress.map(renderTask)}
                                 </div>
-                                <div className="flex flex-col items-end justify-center min-w-[150px]">
-                                    <div className="text-right">
-                                        <p className="text-xs text-gray-400 font-bold uppercase mb-1">Deadline</p>
-                                        {CountdownTimer && <CountdownTimer deadline={task.deadline} />}
-                                    </div>
-                                    <div className="mt-3">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            In Progress
-                                        </span>
-                                    </div>
+                            )}
+
+                            {inReview.length > 0 && (
+                                <div className="bg-gray-50/30">
+                                    {(revisions.length > 0 || inProgress.length > 0) && <div className="px-6 py-2 bg-purple-50 text-purple-800 text-xs font-black uppercase tracking-widest border-l-4 border-purple-200">Waiting for Review</div>}
+                                    {inReview.map(renderTask)}
                                 </div>
-                            </div>
-                        ))
+                            )}
+                        </>
                     )}
                 </div>
             </div>
