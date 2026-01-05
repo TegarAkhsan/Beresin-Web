@@ -5,10 +5,12 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, useForm } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import Modal from '@/Components/Modal';
 
 
 export default function Create({ auth, packages, selectedPackageId }) {
     const user = auth.user;
+    const [showSizeError, setShowSizeError] = useState(false);
 
     const { data, setData, post, processing, errors } = useForm({
         package_id: selectedPackageId || '',
@@ -107,9 +109,9 @@ export default function Create({ auth, packages, selectedPackageId }) {
                         <div className="md:col-span-2 space-y-8">
 
                             {/* 1. Biodata Section */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <span className="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                            <div className="bg-white p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)]">
+                                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+                                    <span className="bg-yellow-400 text-slate-900 border-2 border-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">1</span>
                                     Personal Details
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -162,9 +164,9 @@ export default function Create({ auth, packages, selectedPackageId }) {
                             </div>
 
                             {/* 2. Order Details Section */}
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <span className="bg-indigo-100 text-indigo-600 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                            <div className="bg-white p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)]">
+                                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
+                                    <span className="bg-yellow-400 text-slate-900 border-2 border-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">2</span>
                                     Project Requirements
                                 </h3>
                                 <div className="space-y-4">
@@ -191,14 +193,32 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <InputLabel htmlFor="reference_file" value="Reference Brief" />
-                                            <input type="file" onChange={e => setData('reference_file', e.target.files[0])} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 10MB.</p>
+                                            <input type="file" onChange={e => {
+                                                const file = e.target.files[0];
+                                                if (file && file.size > 5 * 1024 * 1024) {
+                                                    setShowSizeError(true);
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                setData('reference_file', file);
+                                            }} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 5MB.</p>
                                             <InputError message={errors.reference_file} className="mt-2" />
                                         </div>
                                         <div>
-                                            <InputLabel htmlFor="previous_project_file" value="Previous Project / Assets" />
-                                            <input type="file" onChange={e => setData('previous_project_file', e.target.files[0])} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
-                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 10MB.</p>
+                                            <InputLabel htmlFor="previous_project_file">
+                                                Previous Project / Assets <span className="text-gray-400 font-normal text-xs ml-1">(Opsional)</span>
+                                            </InputLabel>
+                                            <input type="file" onChange={e => {
+                                                const file = e.target.files[0];
+                                                if (file && file.size > 5 * 1024 * 1024) {
+                                                    setShowSizeError(true);
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                setData('previous_project_file', file);
+                                            }} accept="application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                            <p className="text-xs text-gray-400 mt-1">PDF Only, Max 5MB.</p>
                                             <InputError message={errors.previous_project_file} className="mt-2" />
                                         </div>
                                     </div>
@@ -208,7 +228,7 @@ export default function Create({ auth, packages, selectedPackageId }) {
 
                         {/* RIGHT COLUMN: SUMMARY */}
                         <div className="md:col-span-1">
-                            <div className="bg-white p-6 rounded-2xl shadow-lg border border-indigo-100 sticky top-4">
+                            <div className="bg-white p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] sticky top-4">
                                 <h3 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h3>
 
                                 <div className="mb-6">
@@ -253,7 +273,7 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                             <span>Operational Fee</span>
                                             <span>+ Rp 5.000</span>
                                         </div>
-                                        <div className="flex justify-between items-center text-lg font-bold text-indigo-900 mt-4 pt-4 border-t border-gray-100">
+                                        <div className="flex justify-between items-center text-xl font-black text-slate-900 mt-6 pt-6 border-t-2 border-dashed border-slate-300">
                                             <span>Total</span>
                                             <span>Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span>
                                         </div>
@@ -278,9 +298,12 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                     </div>
                                 </div>
 
-                                <PrimaryButton className="w-full justify-center py-3 text-base shadow-indigo-200 shadow-xl" disabled={processing}>
+                                <button
+                                    className="w-full justify-center py-3 text-base flex items-center font-black rounded-xl bg-yellow-400 text-slate-900 border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                                    disabled={processing}
+                                >
                                     Pay & Secure Slot 🔒
-                                </PrimaryButton>
+                                </button>
 
                                 <p className="text-xs text-center text-gray-400 mt-4">
                                     By clicking Pay, you agree to our Terms of Service.
@@ -291,6 +314,31 @@ export default function Create({ auth, packages, selectedPackageId }) {
                     </form>
                 </div>
             </div>
+
+            <Modal show={showSizeError} onClose={() => setShowSizeError(false)} maxWidth="sm">
+                <div className="p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <svg className="w-6 h-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        File Terlalu Besar
+                    </h2>
+                    <p className="mt-1 text-base text-gray-600">
+                        Maaf, ukuran file yang Anda pilih melebihi batas <strong>5MB</strong>.
+                    </p>
+                    <p className="mt-2 text-sm text-slate-500">
+                        Silakan kompres file PDF Anda atau pilih file yang lebih kecil agar proses upload berhasil.
+                    </p>
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={() => setShowSizeError(false)}
+                            className="bg-red-600 text-white font-bold py-2 px-4 rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                        >
+                            Saya Mengerti
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

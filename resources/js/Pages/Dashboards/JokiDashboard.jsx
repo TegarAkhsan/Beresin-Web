@@ -103,7 +103,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     // File Upload Form
     const { data, setData, post, processing, reset, errors } = useForm({
         file: null,
-        version_label: 'Final v1',
+        version_label: '',
         external_link: '',
         note: ''
     });
@@ -112,8 +112,8 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         setSelectedOrder(order);
         setData({
             file: null,
-            version_label: 'Final v1',
-            external_link: order.external_link || '',
+            version_label: '',
+            external_link: '',
             note: ''
         });
         setShowUploadModal(true);
@@ -129,18 +129,12 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         post(route('joki.orders.upload', selectedOrder.id), {
             onSuccess: () => {
                 reset('file', 'version_label', 'note');
-                alert('File uploaded successfully.');
+                // alert('File uploaded successfully.'); -- Removed to use Toast
                 closeUploadModal();
             }
         });
     };
 
-    const submitLink = (e) => {
-        e.preventDefault();
-        post(route('joki.orders.link', selectedOrder.id), {
-            onSuccess: () => alert('Link updated.')
-        });
-    }
 
     const MenuItem = ({ id, label, icon }) => (
         <button
@@ -344,16 +338,16 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
             </Modal>
 
             {/* 2. Detail Modal (Active Tasks) */}
-            <Modal show={showDetailModal} onClose={closeDetailModal}>
+            <Modal show={showDetailModal} onClose={closeDetailModal} maxWidth="lg">
                 <div className="p-6">
                     {detailTask && (
                         <>
-                            <div className="border-b pb-4 mb-6">
+                            <div className="border-b pb-4 mb-4">
                                 <h2 className="text-xl font-bold text-gray-900">Task Details</h2>
                                 <p className="text-sm text-gray-500">Order #{detailTask.order_number}</p>
                             </div>
 
-                            <div className="space-y-8">
+                            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                                 <div>
                                     <h3 className="font-bold text-gray-700 mb-2">Customer Information</h3>
                                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -370,7 +364,49 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                     </div>
                                 </div>
 
-                                {/* New: Package Details / Features */}
+                                {/* Client Assets Section */}
+                                {(detailTask.reference_file || detailTask.previous_project_file || detailTask.external_link) && (
+                                    <div>
+                                        <h3 className="font-bold text-gray-700 mb-2">Client Assets</h3>
+                                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex flex-col gap-3">
+                                            {detailTask.external_link && (
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg">🔗</span>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-blue-800 uppercase">External Link</p>
+                                                        <a href={detailTask.external_link} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm break-all hover:text-blue-800">
+                                                            {detailTask.external_link}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {detailTask.reference_file && (
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg">📄</span>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-blue-800 uppercase">Reference File</p>
+                                                        <a href={`/storage/${detailTask.reference_file}`} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm hover:text-blue-800">
+                                                            Download PDF
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {detailTask.previous_project_file && (
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-lg">📦</span>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-blue-800 uppercase">Previous Project</p>
+                                                        <a href={`/storage/${detailTask.previous_project_file}`} target="_blank" rel="noreferrer" className="text-blue-600 underline text-sm hover:text-blue-800">
+                                                            Download PDF
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Package Details / Features */}
                                 <div>
                                     <h3 className="font-bold text-gray-700 mb-3">Package Deliverables</h3>
                                     <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-5">
@@ -419,7 +455,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                 </div>
                             </div>
 
-                            <div className="mt-8 flex justify-end">
+                            <div className="mt-6 flex justify-end pt-4 border-t border-gray-100">
                                 <SecondaryButton onClick={closeDetailModal}>Close Details</SecondaryButton>
                             </div>
                         </>
@@ -429,32 +465,33 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
             {/* 3. Upload Modal */}
             <Modal show={showUploadModal} onClose={closeUploadModal}>
-                <div className="p-8">
+                <div className="p-8 max-h-[85vh] overflow-y-auto custom-scrollbar">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Sync Deliverables</h2>
 
-                    {/* Link Form */}
-                    <div className="mb-8">
-                        <label className="block text-sm font-bold text-gray-700 mb-4">
-                            1. External Resource Link
-                        </label>
-                        <form onSubmit={submitLink} className="flex gap-2">
+                    {/* Main Form */}
+                    <form onSubmit={submitUpload} autoComplete="off" key={selectedOrder ? selectedOrder.id : 'upload-form'}>
+                        {/* Link Input */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-bold text-gray-700 mb-2">
+                                External Resource Link (Optional)
+                            </label>
                             <TextInput
                                 type="url"
-                                className="flex-1"
+                                name="external_link"
+                                autoComplete="off"
+                                className="w-full"
                                 placeholder="https://..."
                                 value={data.external_link}
                                 onChange={(e) => setData('external_link', e.target.value)}
                             />
-                            <SecondaryButton type="submit">Save Link</SecondaryButton>
-                        </form>
-                    </div>
+                        </div>
 
-                    {/* File Form with NOTE */}
-                    <div className="border-t border-gray-100 pt-8">
-                        <label className="block text-sm font-bold text-gray-700 mb-4">
-                            2. Upload Source File & Notes
-                        </label>
-                        <form onSubmit={submitUpload}>
+                        {/* File Form with NOTE */}
+
+                        <div className="pt-2">
+                            <label className="block text-sm font-bold text-gray-700 mb-4">
+                                Upload Source File & Notes
+                            </label>
                             <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors mb-4 cursor-pointer group">
                                 <input
                                     type="file"
@@ -472,13 +509,39 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                     <InputLabel value="Version Label" className="mb-2" />
                                     <TextInput
                                         type="text"
+                                        name="version_label"
+                                        autoComplete="off"
                                         className="w-full"
-                                        placeholder="e.g. Final Revision v2"
+                                        placeholder="e.g. V1"
                                         value={data.version_label}
                                         onChange={(e) => setData('version_label', e.target.value)}
                                     />
                                     {errors.version_label && <div className="text-red-500 text-sm mt-1">{errors.version_label}</div>}
+
+                                    {/* Version History Helper */}
+                                    {selectedOrder?.files && selectedOrder.files.length > 0 && (
+                                        <div className="mt-2 text-xs text-gray-500">
+                                            <p className="font-bold mb-1">Previous Versions:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedOrder.files.map((file) => (
+                                                    <span key={file.id} className="inline-block px-2 py-1 bg-gray-100 rounded text-gray-600 border border-gray-200">
+                                                        {file.version_label}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
+
+                            {/* Naming Convention Guide */}
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-xs text-yellow-800">
+                                <p className="font-bold mb-1">Naming Guide:</p>
+                                <ul className="list-disc list-inside space-y-0.5">
+                                    <li>First submission: <strong>V1</strong></li>
+                                    <li>Revisions: <strong>Rev V1</strong>, <strong>Rev V2</strong>, etc.</li>
+                                    <li>Final (approved/done): <strong>Final</strong></li>
+                                </ul>
                             </div>
 
                             <div className="mb-6">
@@ -491,15 +554,16 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                     onChange={(e) => setData('note', e.target.value)}
                                 ></textarea>
                             </div>
+                        </div>
 
-                            <div className="flex justify-end gap-3">
-                                <SecondaryButton onClick={closeUploadModal}>Cancel</SecondaryButton>
-                                <PrimaryButton disabled={processing} className="bg-indigo-600">Submit Deliverables</PrimaryButton>
-                            </div>
-                        </form>
-                    </div>
+                        <div className="flex justify-end gap-3 space-x-3">
+                            <SecondaryButton onClick={closeUploadModal}>Cancel</SecondaryButton>
+                            <PrimaryButton disabled={processing} className="bg-indigo-600">Submit Deliverables</PrimaryButton>
+                        </div>
+                    </form>
                 </div>
+
             </Modal>
-        </AuthenticatedLayout>
+        </AuthenticatedLayout >
     );
 }

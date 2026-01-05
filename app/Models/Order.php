@@ -22,6 +22,7 @@ class Order extends Model
         'status',
         'payment_status',
         'payment_proof',
+        'payment_method',
         'result_file',
         'description',
         'deadline',

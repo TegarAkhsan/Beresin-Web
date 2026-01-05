@@ -22,6 +22,7 @@ Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'inde
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('dashboard');
+    Route::post('/users/{user}/blacklist', [App\Http\Controllers\Admin\UserController::class, 'toggleBlacklist'])->name('users.blacklist');
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
 
     // Order Management

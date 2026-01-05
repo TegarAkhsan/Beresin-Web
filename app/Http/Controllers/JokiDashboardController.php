@@ -109,7 +109,8 @@ class JokiDashboardController extends Controller
         $request->validate([
             'file' => 'required|file|max:10240', // 10MB
             'version_label' => 'required|string|max:50',
-            'note' => 'nullable|string'
+            'note' => 'nullable|string',
+            'external_link' => 'nullable|url'
         ]);
 
         $path = $request->file('file')->store('order_results', 'public');
@@ -123,6 +124,7 @@ class JokiDashboardController extends Controller
         // Also update main result_file for backward compatibility and set status to review
         $order->update([
             'result_file' => $path,
+            'external_link' => $request->external_link, // Update link
             'status' => 'review'
         ]);
 

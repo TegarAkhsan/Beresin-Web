@@ -11,7 +11,6 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
     const { data, setData, post, processing, errors, reset } = useForm({
         assignment_type: 'manual',
         joki_id: '',
-        joki_fee: '',
     });
 
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -41,7 +40,6 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
         setData({
             assignment_type: method || 'manual',
             joki_id: '',
-            joki_fee: '',
         });
     };
 
@@ -381,23 +379,6 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                                         })}
                                     </div>
                                     {errors.joki_id && <div className="text-red-600 text-sm mt-1">{errors.joki_id}</div>}
-                                </div>
-
-                                {/* Fee Input */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Joki Fee (Nominal)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
-                                        <TextInput
-                                            type="number"
-                                            value={data.joki_fee}
-                                            onChange={(e) => setData('joki_fee', e.target.value)}
-                                            className="w-full pl-8"
-                                            placeholder="e.g. 50000"
-                                            required
-                                        />
-                                    </div>
-                                    {errors.joki_fee && <div className="text-red-600 text-sm mt-1">{errors.joki_fee}</div>}
                                 </div>
                             </div>
 

@@ -4,9 +4,11 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import Toast from '@/Components/Toast';
 
-export default function AuthenticatedLayout({ header, children, hideNavigation = false }) {
-    const user = usePage().props.auth.user;
+export default function AuthenticatedLayout({ header, children, hideNavigation = false, hideHomeLink = false }) {
+    const { auth, flash } = usePage().props;
+    const user = auth.user;
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -28,13 +30,15 @@ export default function AuthenticatedLayout({ header, children, hideNavigation =
                                 </div>
 
                                 <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                    <NavLink
-                                        href={route('dashboard')}
-                                        active={route().current('dashboard')}
-                                        className="font-bold text-slate-700 hover:text-slate-900 border-b-2 border-transparent hover:border-slate-900"
-                                    >
-                                        Beranda
-                                    </NavLink>
+                                    {!hideHomeLink && (
+                                        <NavLink
+                                            href={route('dashboard')}
+                                            active={route().current('dashboard')}
+                                            className="font-bold text-slate-700 hover:text-slate-900 border-b-2 border-transparent hover:border-slate-900"
+                                        >
+                                            Beranda
+                                        </NavLink>
+                                    )}
                                 </div>
                             </div>
 
@@ -135,12 +139,14 @@ export default function AuthenticatedLayout({ header, children, hideNavigation =
                         }
                     >
                         <div className="space-y-1 pb-3 pt-2">
-                            <ResponsiveNavLink
-                                href={route('dashboard')}
-                                active={route().current('dashboard')}
-                            >
-                                Beranda
-                            </ResponsiveNavLink>
+                            {!hideHomeLink && (
+                                <ResponsiveNavLink
+                                    href={route('dashboard')}
+                                    active={route().current('dashboard')}
+                                >
+                                    Beranda
+                                </ResponsiveNavLink>
+                            )}
                         </div>
 
                         <div className="border-t border-slate-200 pb-1 pt-4">
@@ -179,6 +185,7 @@ export default function AuthenticatedLayout({ header, children, hideNavigation =
             )}
 
             <main>{children}</main>
+            <Toast flash={flash} />
         </div>
     );
 }

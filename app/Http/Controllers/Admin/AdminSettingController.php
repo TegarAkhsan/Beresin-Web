@@ -24,10 +24,11 @@ class AdminSettingController extends Controller
             'invoice_address' => 'nullable|string',
             'whatsapp_number' => 'nullable|string',
             'invoice_logo' => 'nullable|image|max:1024', // Max 1MB
+            'qris_image' => 'nullable|image|max:1024', // Max 1MB
         ]);
 
         foreach ($data as $key => $value) {
-            if ($key === 'invoice_logo') {
+            if ($key === 'invoice_logo' || $key === 'qris_image') {
                 continue; // Handle separately
             }
             Setting::updateOrCreate(['key' => $key], ['value' => $value]);
@@ -36,6 +37,11 @@ class AdminSettingController extends Controller
         if ($request->hasFile('invoice_logo')) {
             $path = $request->file('invoice_logo')->store('settings', 'public');
             Setting::updateOrCreate(['key' => 'invoice_logo'], ['value' => $path]);
+        }
+
+        if ($request->hasFile('qris_image')) {
+            $path = $request->file('qris_image')->store('settings', 'public');
+            Setting::updateOrCreate(['key' => 'qris_image'], ['value' => $path]);
         }
 
         return redirect()->back()->with('success', 'Settings updated successfully.');

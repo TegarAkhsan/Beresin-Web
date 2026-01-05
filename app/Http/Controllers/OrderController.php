@@ -25,6 +25,7 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'package_id' => 'required|exists:packages,id',
+            'payment_method' => 'required|in:qris,va',
             // User Profile Fields
             'name' => 'required|string|max:255',
             'gender' => 'required|in:L,P',
@@ -41,8 +42,8 @@ class OrderController extends Controller
             'external_link' => 'nullable|url',
 
             // File Uploads
-            'reference_file' => 'nullable|file|mimes:pdf|max:10240', // 10MB Max, PDF Only
-            'previous_project_file' => 'nullable|file|mimes:pdf|max:10240',
+            'reference_file' => 'nullable|file|mimes:pdf|max:5120', // 5MB Max, PDF Only
+            'previous_project_file' => 'nullable|file|mimes:pdf|max:5120',
         ]);
 
         $user = auth()->user();
@@ -60,7 +61,7 @@ class OrderController extends Controller
         $package = Package::find($validated['package_id']);
 
         // Calculate Fee (Rush Fee Logic)
-        $standardDeadline = now()->addDays($package->duration_days ?? 3);
+        $standardDeadline = now()->addDays($package->duration_days ?? 3)->startOfDay();
         $userDeadline = \Carbon\Carbon::parse($validated['deadline']);
 
         $amount = $package->price;
@@ -98,6 +99,7 @@ class OrderController extends Controller
             'external_link' => $validated['external_link'] ?? null,
             'reference_file' => $referenceFilePath,
             'previous_project_file' => $projectFilePath,
+            'payment_method' => $validated['payment_method'],
             'status' => 'pending_payment',
         ]);
 
@@ -112,11 +114,12 @@ class OrderController extends Controller
         }
 
         $order->load(['package.service', 'joki', 'user']);
-        $whatsapp_number = \App\Models\Setting::where('key', 'whatsapp_number')->value('value');
+        $settings = \App\Models\Setting::whereIn('key', ['whatsapp_number', 'qris_image'])->pluck('value', 'key');
 
         return Inertia::render('Orders/Show', [
             'order' => $order,
-            'whatsapp_number' => $whatsapp_number,
+            'whatsapp_number' => $settings['whatsapp_number'] ?? null,
+            'qris_image' => $settings['qris_image'] ?? null,
         ]);
     }
 
@@ -147,10 +150,16 @@ class OrderController extends Controller
             $path = $request->file('payment_proof')->store('payments', 'public');
             $order->update([
                 'payment_proof' => $path,
-                'payment_status' => 'paid', // Auto set to paid for mock, or pending verification
-                'status' => 'pending_assignment', // Moves to next step
             ]);
-            return back()->with('message', 'Payment proof uploaded!');
+            return back()->with('message', 'Payment proof uploaded! Please confirm sending to admin.');
+        }
+
+        if ($request->input('action') === 'confirm_payment') {
+            $order->update([
+                'payment_status' => 'pending_verification',
+                'status' => 'waiting_approval',
+            ]);
+            return back()->with('message', 'Payment confirmed! Waiting for admin verification.');
         }
 
         if ($request->hasFile('result_file')) {
@@ -238,13 +247,27 @@ class OrderController extends Controller
             abort(403);
         }
 
+        $order->load('package');
+
+        if ($order->revision_count >= $order->package->max_revisions) {
+            return back()->with('error', 'Anda telah menggunakan seluruh jatah revisinya.');
+        }
+
         $request->validate([
-            'reason' => 'required|string|max:1000'
+            'reason' => 'required|string|max:1000',
+            'revision_file' => 'nullable|file|max:5120' // 5MB
         ]);
+
+        $path = null;
+        if ($request->hasFile('revision_file')) {
+            $path = $request->file('revision_file')->store('revisions', 'public');
+        }
 
         $order->update([
             'status' => 'revision',
             'revision_reason' => $request->input('reason'),
+            'revision_file' => $path,
+            'revision_count' => $order->revision_count + 1
         ]);
 
         return back()->with('message', 'Revision requested. The Joki has been notified.');

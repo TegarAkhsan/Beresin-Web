@@ -101,4 +101,24 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')->with('message', 'User deleted successfully.');
     }
+
+    public function toggleBlacklist(Request $request, User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot blacklist yourself.');
+        }
+
+        $request->validate([
+            'is_blacklisted' => 'required|boolean',
+            'blacklist_reason' => 'nullable|string|max:255',
+        ]);
+
+        $user->update([
+            'is_blacklisted' => $request->is_blacklisted,
+            'blacklist_reason' => $request->is_blacklisted ? $request->blacklist_reason : null,
+        ]);
+
+        $status = $request->is_blacklisted ? 'blacklisted' : 'unblacklisted';
+        return back()->with('message', "User has been {$status}.");
+    }
 }

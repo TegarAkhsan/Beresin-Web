@@ -15,7 +15,7 @@ class AdminOrderController extends Controller
     public function verify()
     {
         $orders = Order::with(['user', 'package.service'])
-            ->where('status', 'pending_payment')
+            ->whereIn('status', ['pending_payment', 'waiting_approval'])
             ->latest()
             ->paginate(10);
 
@@ -108,7 +108,6 @@ class AdminOrderController extends Controller
         $request->validate([
             'assignment_type' => 'required|in:manual,auto',
             'joki_id' => 'required_if:assignment_type,manual|nullable|exists:users,id',
-            'joki_fee' => 'required_if:assignment_type,manual|nullable|numeric|min:0',
         ]);
 
         $jokiId = $request->joki_id;
@@ -140,7 +139,8 @@ class AdminOrderController extends Controller
         } else {
             // Manual Assignment
             $jokiName = User::find($jokiId)->name ?? 'Joki';
-            $fee = $request->joki_fee;
+            // Use package fee or 0, ignoring manual input as requested
+            $fee = $order->package->joki_fee ?? 0;
         }
 
         $order->update([

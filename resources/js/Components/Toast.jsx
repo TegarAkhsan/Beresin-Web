@@ -15,6 +15,13 @@ export default function Toast() {
             const timer = setTimeout(() => setVisible(false), 3000);
             return () => clearTimeout(timer);
         }
+        if (props.flash?.error) {
+            setMessage(props.flash.error);
+            setType('error');
+            setVisible(true);
+            const timer = setTimeout(() => setVisible(false), 5000);
+            return () => clearTimeout(timer);
+        }
         if (props.errors && Object.keys(props.errors).length > 0) {
             // Optional: Show errors as toast? User specifically asked for green success notification.
             // Let's stick to flash message for now, but keep structure extensible.

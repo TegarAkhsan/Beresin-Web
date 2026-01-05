@@ -14,7 +14,8 @@ export default function Review({ auth, order }) {
     });
 
     const { data: revisionData, setData: setRevisionData, post: postRevision, processing: revisionProcessing } = useForm({
-        reason: ''
+        reason: '',
+        revision_file: null // Add file field
     });
 
     const [modalType, setModalType] = useState(null); // 'accept' | 'revision'
@@ -127,7 +128,7 @@ export default function Review({ auth, order }) {
                             </div>
 
                             {/* External Link Preview (if applicable) */}
-                            {order.external_link && (
+                            {order.external_link && order.external_link !== '' && (
                                 <div className="bg-white rounded-[2rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] p-6">
                                     <h3 className="font-black text-xl text-slate-900 mb-4">External Link / Demo</h3>
                                     <div className="flex items-center gap-4 bg-blue-50 p-4 rounded-xl border-2 border-blue-100">
@@ -152,6 +153,13 @@ export default function Review({ auth, order }) {
 
                                 {order.status === 'review' ? (
                                     <div className="space-y-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Revision Limit</span>
+                                            <span className={`text-xs font-bold px-2 py-1 rounded ${order.revision_count >= (order.package?.max_revisions || 3) ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                {order.revision_count || 0} / {order.package?.max_revisions || 3} Used
+                                            </span>
+                                        </div>
+
                                         <button
                                             onClick={() => setModalType('accept')}
                                             className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2"
@@ -160,13 +168,24 @@ export default function Review({ auth, order }) {
                                             Terima Hasil & Selesai
                                         </button>
 
-                                        <button
-                                            onClick={() => setModalType('revision')}
-                                            className="w-full py-4 bg-white text-slate-900 font-bold rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(200,200,200,1)] hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                                            Ajukan Revisi
-                                        </button>
+                                        {order.revision_count >= (order.package?.max_revisions || 3) ? (
+                                            <div className="w-full py-4 bg-slate-100 text-slate-400 font-bold rounded-xl border-2 border-slate-300 flex items-center justify-center gap-2 cursor-not-allowed">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                                Jatah Revisi Habis
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setModalType('revision')}
+                                                className="w-full py-4 bg-white text-slate-900 font-bold rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(200,200,200,1)] hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                                Ajukan Revisi
+                                            </button>
+                                        )}
+
+                                        {order.revision_count >= (order.package?.max_revisions || 3) && (
+                                            <p className="text-xs text-red-500 font-bold text-center mt-2">Anda telah menggunakan seluruh jatah revisinya.</p>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-center py-8 bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
@@ -178,17 +197,35 @@ export default function Review({ auth, order }) {
                                 <div className="mt-8 pt-8 border-t-2 border-slate-100">
                                     <h4 className="font-bold text-slate-900 mb-4">Version History</h4>
                                     <div className="space-y-3">
-                                        {/* Main Result */}
-                                        {order.result_file && (
-                                            <div className="flex items-center gap-3 text-sm p-3 bg-slate-50 rounded-lg">
-                                                <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center font-bold text-xs text-slate-500">v1</div>
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-slate-900">Latest Result</p>
-                                                    <p className="text-slate-500 text-xs">Uploaded just now</p>
+                                        {/* History List */}
+                                        {order.files && order.files.length > 0 ? (
+                                            order.files.slice().reverse().map((file) => (
+                                                <div key={file.id} className="flex items-center gap-3 text-sm p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition border border-transparent hover:border-slate-200">
+                                                    <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center font-bold text-xs text-slate-500 shrink-0">
+                                                        {file.version_label.substring(0, 3)}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-slate-900 truncate">{file.version_label}</p>
+                                                        <p className="text-slate-500 text-xs truncate">
+                                                            {new Date(file.created_at).toLocaleString('id-ID', {
+                                                                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                        {file.note && <p className="text-xs text-slate-400 italic truncate">"{file.note}"</p>}
+                                                    </div>
+                                                    <a
+                                                        href={`/storage/${file.file_path}`}
+                                                        target="_blank"
+                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-full"
+                                                        title="Download"
+                                                    >
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                    </a>
                                                 </div>
-                                            </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-sm text-slate-400 italic">No previous versions.</p>
                                         )}
-                                        {/* TODO: Iterate order.files if implementing history */}
                                     </div>
                                 </div>
                             </div>
@@ -246,13 +283,35 @@ export default function Review({ auth, order }) {
                     <form onSubmit={handleRevision}>
                         <div className="mb-6">
                             <InputLabel value="Catatan Revisi" className="font-bold text-slate-900 uppercase tracking-wide text-xs mb-2" />
+                            <div className="bg-blue-50 text-blue-800 text-xs p-3 rounded-lg mb-3 border border-blue-200">
+                                <p className="font-bold mb-1">Panduan Revisi:</p>
+                                <ul className="list-disc list-inside">
+                                    <li>Jadikan satu semua poin revisi agar lebih efisien.</li>
+                                    <li>Jelaskan detail yang jelas (misal: "Ganti font header jadi Arial").</li>
+                                    <li>Anda bisa melampirkan file referensi/coretan (Max 5MB).</li>
+                                </ul>
+                            </div>
                             <textarea
                                 className="w-full rounded-xl border-slate-300 shadow-sm focus:border-slate-900 focus:ring-slate-900 h-32"
                                 value={revisionData.reason}
                                 onChange={e => setRevisionData('reason', e.target.value)}
-                                placeholder="Contoh: Tolong ganti warna header menjadi biru..."
+                                placeholder="Tulis detail revisi disini..."
                                 required
                             ></textarea>
+
+                            <div className="mt-4">
+                                <InputLabel value="Lampiran File (Opsional)" className="font-bold text-slate-900 uppercase tracking-wide text-xs mb-2" />
+                                <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 transition-colors cursor-pointer group bg-white">
+                                    <input
+                                        type="file"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={(e) => setRevisionData('revision_file', e.target.files[0])}
+                                    />
+                                    <div className="text-slate-400 group-hover:text-slate-600">
+                                        <p className="text-sm font-medium">{revisionData.revision_file ? revisionData.revision_file.name : "Klik untuk upload file pendukung (Max 5MB)"}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div className="flex justify-end gap-3">
                             <SecondaryButton onClick={() => setModalType(null)}>Batal</SecondaryButton>

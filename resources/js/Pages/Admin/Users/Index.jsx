@@ -1,11 +1,54 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
+import Modal from '@/Components/Modal';
+import InputLabel from '@/Components/InputLabel';
+import TextInput from '@/Components/TextInput';
+import SecondaryButton from '@/Components/SecondaryButton';
+import PrimaryButton from '@/Components/PrimaryButton';
 
 export default function Index({ auth, users, filters }) {
+    const [blacklistUser, setBlacklistUser] = useState(null);
+    const { data, setData, post, processing, reset, errors } = useForm({
+        is_blacklisted: false,
+        blacklist_reason: '',
+    });
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+    const handleSearch = (e) => {
+        if (e.key === 'Enter') {
+            router.get(route('admin.users.index'), { search: searchQuery }, {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
+        }
+    };
+
     const handleDelete = (id) => {
         if (confirm('Are you sure you want to delete this user?')) {
             router.delete(route('admin.users.destroy', id));
         }
+    };
+
+    const openBlacklistModal = (user) => {
+        setBlacklistUser(user);
+        setData({
+            is_blacklisted: !user.is_blacklisted,
+            blacklist_reason: user.blacklist_reason || '',
+        });
+    };
+
+    const handleBlacklistSubmit = (e) => {
+        e.preventDefault();
+        post(route('admin.users.blacklist', blacklistUser.id), {
+            onSuccess: () => {
+                setBlacklistUser(null);
+                reset();
+            }
+        });
     };
 
     return (
@@ -25,7 +68,15 @@ export default function Index({ auth, users, filters }) {
                             Add New User
                         </Link>
 
-                        {/* Search could go here */}
+                        <div className="flex items-center gap-2">
+                            <TextInput
+                                className="w-64 text-sm"
+                                placeholder="Search by name or email..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={handleSearch}
+                            />
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -34,7 +85,7 @@ export default function Index({ auth, users, filters }) {
                                 <tr>
                                     <th scope="col" className="px-6 py-3">Name</th>
                                     <th scope="col" className="px-6 py-3">Role</th>
-                                    <th scope="col" className="px-6 py-3">Specialization</th>
+                                    <th scope="col" className="px-6 py-3">Status</th>
                                     <th scope="col" className="px-6 py-3">Email</th>
                                     <th scope="col" className="px-6 py-3">Joined</th>
                                     <th scope="col" className="px-6 py-3">Actions</th>
@@ -56,12 +107,14 @@ export default function Index({ auth, users, filters }) {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            {user.role === 'joki' && user.specialization ? (
-                                                <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded border border-purple-200 uppercase">
-                                                    {user.specialization}
+                                            {user.is_blacklisted ? (
+                                                <span className="bg-red-900 text-red-100 text-xs font-bold px-2 py-0.5 rounded border border-red-700 uppercase">
+                                                    BLACKLISTED
                                                 </span>
                                             ) : (
-                                                <span className="text-gray-400 text-xs">-</span>
+                                                <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded border border-green-200">
+                                                    Active
+                                                </span>
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
@@ -78,6 +131,12 @@ export default function Index({ auth, users, filters }) {
                                                 Edit
                                             </Link>
                                             <button
+                                                onClick={() => openBlacklistModal(user)}
+                                                className={`font-medium hover:underline ${user.is_blacklisted ? 'text-green-600' : 'text-slate-900'}`}
+                                            >
+                                                {user.is_blacklisted ? 'Restore' : 'Blacklist'}
+                                            </button>
+                                            <button
                                                 onClick={() => handleDelete(user.id)}
                                                 className="font-medium text-red-600 dark:text-red-500 hover:underline"
                                             >
@@ -88,7 +147,7 @@ export default function Index({ auth, users, filters }) {
                                 ))}
                                 {users.data.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-4 text-center">No users found.</td>
+                                        <td colSpan="6" className="px-6 py-4 text-center">No users found.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -114,6 +173,42 @@ export default function Index({ auth, users, filters }) {
                     </div>
                 </div>
             </div>
+
+            <Modal show={!!blacklistUser} onClose={() => setBlacklistUser(null)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">
+                        {data.is_blacklisted ? 'Blacklist User' : 'Restore User'}
+                    </h2>
+
+                    <p className="mb-4 text-sm text-gray-600">
+                        {data.is_blacklisted
+                            ? `Are you sure you want to blacklist ${blacklistUser?.name}? They will be logged out and unable to access the platform.`
+                            : `Are you sure you want to restore access for ${blacklistUser?.name}?`}
+                    </p>
+
+                    <form onSubmit={handleBlacklistSubmit}>
+                        {data.is_blacklisted && (
+                            <div className="mb-6">
+                                <InputLabel value="Reason for Blacklist" />
+                                <TextInput
+                                    className="w-full mt-1"
+                                    value={data.blacklist_reason}
+                                    onChange={e => setData('blacklist_reason', e.target.value)}
+                                    placeholder="e.g. Violation of Terms, Fraud..."
+                                />
+                                {errors.blacklist_reason && <div className="text-red-500 text-sm mt-1">{errors.blacklist_reason}</div>}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3">
+                            <SecondaryButton onClick={() => setBlacklistUser(null)}>Cancel</SecondaryButton>
+                            <PrimaryButton className={data.is_blacklisted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} disabled={processing}>
+                                {data.is_blacklisted ? 'Confirm Blacklist' : 'Restore Access'}
+                            </PrimaryButton>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </AdminLayout>
     );
 }

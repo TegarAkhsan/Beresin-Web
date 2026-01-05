@@ -11,6 +11,7 @@ export default function SettingsIndex({ auth, settings }) {
         invoice_address: settings.invoice_address || 'Jalan Digital No. 1\nJakarta, Indonesia',
         whatsapp_number: settings.whatsapp_number || '6281234567890',
         invoice_logo: null,
+        qris_image: null,
     });
 
     const submit = (e) => {
@@ -94,6 +95,30 @@ export default function SettingsIndex({ auth, settings }) {
                                         <div className="mt-4">
                                             <p className="text-sm text-gray-500 mb-2">Current Logo:</p>
                                             <img src={`/storage/${settings.invoice_logo}`} alt="Current Logo" className="h-16 object-contain" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="qris_image" value="QRIS Image (Optional)" />
+                                    <input
+                                        type="file"
+                                        id="qris_image"
+                                        className="mt-1 block w-full text-sm text-slate-500
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-full file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-indigo-50 file:text-indigo-700
+                                            hover:file:bg-indigo-100"
+                                        onChange={(e) => setData('qris_image', e.target.files[0])}
+                                        accept="image/*"
+                                    />
+                                    <InputError message={errors.qris_image} className="mt-2" />
+
+                                    {settings.qris_image && (
+                                        <div className="mt-4">
+                                            <p className="text-sm text-gray-500 mb-2">Current QRIS:</p>
+                                            <img src={`/storage/${settings.qris_image}`} alt="Current QRIS" className="h-32 object-contain border rounded-lg" />
                                         </div>
                                     )}
                                 </div>
