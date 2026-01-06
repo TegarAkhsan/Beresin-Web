@@ -12,7 +12,12 @@ class OrderController extends Controller
 {
     public function create(Request $request)
     {
-        $packages = Package::with('service')->get();
+        $packages = Package::with([
+            'service',
+            'addons' => function ($query) {
+                $query->where('is_active', true);
+            }
+        ])->get();
         $selectedPackageId = $request->query('package_id');
 
         return Inertia::render('Orders/Create', [
@@ -23,7 +28,11 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        // First validate package existence to determine validation rules
+        $request->validate(['package_id' => 'required|exists:packages,id']);
+        $package = Package::find($request->package_id);
+
+        $rules = [
             'package_id' => 'required|exists:packages,id',
             'payment_method' => 'required|in:qris,va',
             // User Profile Fields
@@ -42,9 +51,19 @@ class OrderController extends Controller
             'external_link' => 'nullable|url',
 
             // File Uploads
-            'reference_file' => 'nullable|file|mimes:pdf|max:5120', // 5MB Max, PDF Only
+            'reference_file' => 'nullable|file|mimes:pdf|max:5120',
             'previous_project_file' => 'nullable|file|mimes:pdf|max:5120',
-        ]);
+        ];
+
+        // Conditional Validation for Negotiation
+        if ($package->is_negotiable) {
+            $rules['student_card'] = 'required|file|mimes:jpg,jpeg,png,pdf|max:5120';
+            $rules['proposed_price'] = 'required|numeric|min:50000';
+            $rules['selected_features'] = 'nullable|array';
+            // Disable strict payment method check if negotiation? Actually still needed for later.
+        }
+
+        $validated = $request->validate($rules);
 
         $user = auth()->user();
 
@@ -58,26 +77,39 @@ class OrderController extends Controller
             'referral_source' => $validated['referral_source'],
         ]);
 
-        $package = Package::find($validated['package_id']);
+        $amount = 0;
+        $status = 'pending_payment';
+        $studentCardPath = null;
 
-        // Calculate Fee (Rush Fee Logic)
-        $standardDeadline = now()->addDays($package->duration_days ?? 3)->startOfDay();
-        $userDeadline = \Carbon\Carbon::parse($validated['deadline']);
+        if ($package->is_negotiable) {
+            // Negotiation Flow
+            $amount = $validated['proposed_price']; // Set initial amount to proposed
+            $status = 'waiting_approval'; // Skip payment, go to admin approval/negotiation
 
-        $amount = $package->price;
+            if ($request->hasFile('student_card')) {
+                $studentCardPath = $request->file('student_card')->store('student_cards', 'public');
+            }
+        } else {
+            // Standard Flow
+            // Calculate Fee (Rush Fee Logic)
+            $standardDeadline = now()->addDays($package->duration_days ?? 3)->startOfDay();
+            $userDeadline = \Carbon\Carbon::parse($validated['deadline']);
 
-        // If user wants it sooner than standard duration (and standard is not in the past)
-        if ($userDeadline->lt($standardDeadline) && $standardDeadline->isFuture()) {
-            $daysSaved = $userDeadline->diffInDays($standardDeadline);
-            // Charge 25k per day saved
-            $rushFee = max(0, ceil($daysSaved) * 25000);
-            $amount += $rushFee;
+            $amount = $package->price;
+
+            // If user wants it sooner than standard duration (and standard is not in the past)
+            if ($userDeadline->lt($standardDeadline) && $standardDeadline->isFuture()) {
+                $daysSaved = $userDeadline->diffInDays($standardDeadline);
+                // Charge 25k per day saved
+                $rushFee = max(0, ceil($daysSaved) * 25000);
+                $amount += $rushFee;
+            }
+
+            // Add Operational Fee
+            $amount += 5000;
         }
 
-        // Add Operational Fee
-        $amount += 5000;
-
-        // Handle File Uploads
+        // Handle Common File Uploads
         $referenceFilePath = null;
         if ($request->hasFile('reference_file')) {
             $referenceFilePath = $request->file('reference_file')->store('order_refs', 'public');
@@ -93,6 +125,14 @@ class OrderController extends Controller
             'user_id' => $user->id,
             'package_id' => $package->id,
             'amount' => $amount,
+
+            // Financial Breakdown
+            'base_price' => $package->is_negotiable ? $amount : $package->price,
+            'rush_fee' => $package->is_negotiable ? 0 : ($rushFee ?? 0),
+            'platform_fee' => $package->is_negotiable ? 0 : 5000,
+            // Note: Negotiation assumes inclusive price or 0 platform fee for now unless specified.
+            // If negotiation needs breakdown, we need frontend to send it. Assuming simple total for negotiation.
+
             'description' => $validated['description'] ?? 'No description provided.',
             'deadline' => $validated['deadline'],
             'notes' => $validated['notes'] ?? null,
@@ -100,11 +140,21 @@ class OrderController extends Controller
             'reference_file' => $referenceFilePath,
             'previous_project_file' => $projectFilePath,
             'payment_method' => $validated['payment_method'],
-            'status' => 'pending_payment',
+            'status' => $status,
+
+            // Negotiation Fields
+            'is_negotiation' => $package->is_negotiable,
+            'proposed_price' => $package->is_negotiable ? $validated['proposed_price'] : null,
+            'student_card' => $studentCardPath,
+            'selected_features' => $package->is_negotiable ? ($validated['selected_features'] ?? []) : null,
+            'negotiation_deadline' => $package->is_negotiable ? $validated['deadline'] : null, // Same as deadline for now
         ]);
 
-        // Return the created order to the frontend
-        return redirect()->route('orders.show', $order)->with('message', 'Order placed successfully! Please complete payment.');
+        $message = $package->is_negotiable
+            ? 'Order proposal submitted! Waiting for admin approval for negotiation.'
+            : 'Order placed successfully! Please complete payment.';
+
+        return redirect()->route('orders.show', $order)->with('message', $message);
     }
 
     public function show(Order $order)
@@ -133,7 +183,7 @@ class OrderController extends Controller
             return redirect()->route('orders.show', $order);
         }
 
-        $order->load(['package.service', 'joki', 'user', 'files']);
+        $order->load(['package.service', 'joki', 'user', 'files', 'milestones']);
 
         return Inertia::render('Orders/Review', [
             'order' => $order,
@@ -226,6 +276,48 @@ class OrderController extends Controller
             'comment' => 'nullable|string'
         ]);
 
+        // Milestone Logic
+        $order->load('milestones');
+        if ($order->milestones->isNotEmpty()) {
+            // Find current active milestone (that is in review/submitted stage)
+            // Assuming Admin has approved it to 'customer_review', OR if we allow customer to approve 'submitted' directly (if admin hasn't intervened).
+            // Let's safe check for 'customer_review', 'submitted', or 'admin_review' (if admin didn't act).
+            // But ideally it should be 'customer_review'.
+
+            // For now, let's find the first one that is NOT completed.
+            $currentMilestone = $order->milestones->whereIn('status', ['submitted', 'customer_review'])->first();
+
+            if ($currentMilestone) {
+                // Complete this milestone
+                $currentMilestone->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                    'customer_feedback' => $validated['comment'] // Save feedback here too?
+                ]);
+
+                // Check for next milestone
+                $nextMilestone = $order->milestones->where('sort_order', '>', $currentMilestone->sort_order)->sortBy('sort_order')->first();
+
+                if ($nextMilestone) {
+                    $nextMilestone->update(['status' => 'in_progress']);
+
+                    // Order goes back to in_progress
+                    $order->update(['status' => 'in_progress']);
+
+                    // Create review log but don't finalize order
+                    \App\Models\Review::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id(),
+                        'rating' => $validated['rating'],
+                        'comment' => "Milestone '{$currentMilestone->name}' Approved: " . $validated['comment']
+                    ]);
+
+                    return back()->with('message', "Milestone '{$currentMilestone->name}' approved! Next milestone started.");
+                }
+            }
+        }
+
+        // If no milestones OR it was the last milestone: Finalize Order
         $order->update([
             'status' => 'completed',
             'completed_at' => now()

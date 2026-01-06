@@ -31,6 +31,11 @@ export default function Create({ auth, packages, selectedPackageId }) {
         reference_file: null,
         previous_project_file: null,
 
+        // Negotiation Data
+        student_card: null,
+        proposed_price: 0,
+        selected_features: [],
+
         // Payment Method (Visual only for now, passed to backend if needed)
         payment_method: 'qris',
     });
@@ -53,9 +58,40 @@ export default function Create({ auth, packages, selectedPackageId }) {
             defaultDate.setDate(defaultDate.getDate() + (pkg.duration_days || 3));
             setData('deadline', defaultDate.toISOString().split('T')[0]);
         }
+
+        // Reset negotiation data when package changes
+        if (pkg?.is_negotiable) {
+            setData(d => ({
+                ...d,
+                student_card: null,
+                proposed_price: 0,
+                selected_features: []
+            }));
+        }
+
     }, [data.package_id]);
 
-    // Fee Calculation
+    // Effect 1: Auto-update deadline when features change (to start with 0 Fee)
+    useEffect(() => {
+        if (!selectedPackage?.is_negotiable) return;
+
+        let addonsDays = 1; // Base
+        const features = selectedPackage.addons || selectedPackage.addon_features || [];
+
+        if (features.length > 0 && data.selected_features.length > 0) {
+            const selected = features.filter(f => data.selected_features.includes(f.name));
+            addonsDays += selected.reduce((sum, f) => sum + (parseInt(f.estimate_days) || 1), 0);
+        }
+
+        // Auto-set deadline to "Today + Estimated Days"
+        const newDeadline = new Date();
+        newDeadline.setDate(newDeadline.getDate() + addonsDays);
+        setData('deadline', newDeadline.toISOString().split('T')[0]);
+
+    }, [data.selected_features, selectedPackage]);
+
+
+    // Effect 2: Calculate Fee and Total when Deadline or Features change
     useEffect(() => {
         if (!selectedPackage || !data.deadline) {
             setRushFee(0);
@@ -63,6 +99,43 @@ export default function Create({ auth, packages, selectedPackageId }) {
             return;
         }
 
+        if (selectedPackage.is_negotiable) {
+            // Calculate base total from add-ons
+            let addonsTotal = 0;
+            let addonsDays = 1;
+            const features = selectedPackage.addons || selectedPackage.addon_features || [];
+
+            if (features.length > 0 && data.selected_features.length > 0) {
+                const selected = features.filter(f => data.selected_features.includes(f.name));
+                addonsTotal = selected.reduce((sum, f) => sum + parseFloat(f.price), 0);
+                addonsDays += selected.reduce((sum, f) => sum + (parseInt(f.estimate_days) || 1), 0);
+            }
+
+            // Calculate Rush Fee for Negotiation
+            let rushFeeCalc = 0;
+            if (data.deadline) {
+                const standardDeadline = new Date();
+                standardDeadline.setDate(standardDeadline.getDate() + addonsDays);
+                standardDeadline.setHours(0, 0, 0, 0);
+
+                const userDeadline = new Date(data.deadline);
+                userDeadline.setHours(0, 0, 0, 0);
+
+                const diffTime = standardDeadline - userDeadline;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                // Only apply fee if deadline is strictly BEFORE the estimated date
+                if (diffDays > 0) {
+                    rushFeeCalc = diffDays * 50000;
+                }
+            }
+
+            setRushFee(rushFeeCalc);
+            setTotalPrice(addonsTotal + rushFeeCalc);
+            return;
+        }
+
+        // Non-negotiable logic
         const standardDeadline = new Date();
         standardDeadline.setDate(standardDeadline.getDate() + (selectedPackage.duration_days || 3));
         standardDeadline.setHours(0, 0, 0, 0);
@@ -71,7 +144,7 @@ export default function Create({ auth, packages, selectedPackageId }) {
         userDeadline.setHours(0, 0, 0, 0);
 
         const diffTime = standardDeadline - userDeadline;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Difference in days
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         let fee = 0;
         if (diffDays > 0) {
@@ -79,10 +152,9 @@ export default function Create({ auth, packages, selectedPackageId }) {
         }
 
         setRushFee(fee);
-        setTotalPrice(selectedPackage.price + fee + 5000); // Base + Rush + Op Fee
+        setTotalPrice(selectedPackage.price + fee + 5000);
 
-    }, [data.deadline, selectedPackage]);
-
+    }, [data.deadline, selectedPackage, data.selected_features]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -95,6 +167,15 @@ export default function Create({ auth, packages, selectedPackageId }) {
         if (days <= 3) return '1-3 Days';
         if (days <= 7) return '6-7 Days';
         return '10-15 Days';
+    };
+
+    const handleFeatureToggle = (featureName) => {
+        const current = data.selected_features;
+        if (current.includes(featureName)) {
+            setData('selected_features', current.filter(f => f !== featureName));
+        } else {
+            setData('selected_features', [...current, featureName]);
+        }
     };
 
     return (
@@ -112,7 +193,7 @@ export default function Create({ auth, packages, selectedPackageId }) {
                             <div className="bg-white p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)]">
                                 <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-3">
                                     <span className="bg-yellow-400 text-slate-900 border-2 border-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">1</span>
-                                    Personal Details
+                                    Personal Details {selectedPackage?.is_negotiable && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full border border-indigo-200">Student Verif Req.</span>}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -160,6 +241,24 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                         </select>
                                         <InputError message={errors.referral_source} className="mt-2" />
                                     </div>
+
+                                    {/* Student Card Upload for Negotiation Packages */}
+                                    {selectedPackage?.is_negotiable && (
+                                        <div className="md:col-span-2 mt-4 p-4 border-2 border-indigo-100 bg-indigo-50 rounded-xl">
+                                            <InputLabel htmlFor="student_card" value="Student ID Card (Kartu Tanda Mahasiswa)" />
+                                            <p className="text-xs text-indigo-600 mb-2">Required for Student Package verification.</p>
+                                            <input type="file" id="student_card" onChange={e => {
+                                                const file = e.target.files[0];
+                                                if (file && file.size > 5 * 1024 * 1024) {
+                                                    setShowSizeError(true);
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                setData('student_card', file);
+                                            }} accept="image/*,application/pdf" className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700" required />
+                                            <InputError message={errors.student_card} className="mt-2" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -169,6 +268,36 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                     <span className="bg-yellow-400 text-slate-900 border-2 border-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">2</span>
                                     Project Requirements
                                 </h3>
+
+                                {/* Student Pcakage Negotiation Features */}
+                                {selectedPackage?.is_negotiable && (selectedPackage.addons?.length > 0 || selectedPackage.addon_features) && (
+                                    <div className="mb-6 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                                        <label className="block font-medium text-sm text-gray-700 mb-3">Select Features needed:</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {(selectedPackage.addons || selectedPackage.addon_features).map((feature, idx) => (
+                                                <div key={idx} className={`flex items-start p-3 rounded-lg border cursor-pointer transition-all ${data.selected_features.includes(feature.name) ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-gray-200 hover:border-gray-300 bg-white'}`} onClick={(e) => {
+                                                    // Only toggle if clicking the container, not the checkbox itself to avoid double toggle
+                                                    if (e.target.type !== 'checkbox') handleFeatureToggle(feature.name);
+                                                }}>
+                                                    <div className="flex items-center h-5">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={data.selected_features.includes(feature.name)}
+                                                            onChange={() => handleFeatureToggle(feature.name)}
+                                                            className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                                                        />
+                                                    </div>
+                                                    <div className="ml-3 text-sm">
+                                                        <label className="font-medium text-gray-700 cursor-pointer">{feature.name}</label>
+                                                        <p className="text-gray-500 text-xs">+ Rp {new Intl.NumberFormat('id-ID').format(feature.price)}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <InputError message={errors.selected_features} className="mt-2" />
+                                    </div>
+                                )}
+
                                 <div className="space-y-4">
                                     <div>
                                         <InputLabel htmlFor="description" value="Project Note / Description" />
@@ -179,10 +308,27 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                     <div>
                                         <InputLabel htmlFor="deadline" value="Desired Deadline" />
                                         <TextInput id="deadline" type="date" value={data.deadline} onChange={e => setData('deadline', e.target.value)} className="mt-1 block w-full" required />
-                                        {rushFee > 0 && <p className="text-xs text-amber-600 font-bold mt-1">⚡ RUSH ORDER: +Rp 25.000/day earlier</p>}
+                                        {!selectedPackage?.is_negotiable && rushFee > 0 && <p className="text-xs text-amber-600 font-bold mt-1">⚡ RUSH ORDER: +Rp 25.000/day earlier</p>}
                                         <p className="text-xs text-gray-400 mt-1">Initial Recommendation: {selectedPackage?.duration_days || 3} days from now ({formatDuration(selectedPackage?.duration_days)})</p>
                                         <InputError message={errors.deadline} className="mt-2" />
                                     </div>
+
+                                    {selectedPackage?.is_negotiable && (
+                                        <div>
+                                            <InputLabel htmlFor="proposed_price" value="Your Proposed Budget (Rp)" />
+                                            <TextInput
+                                                id="proposed_price"
+                                                type="number"
+                                                value={data.proposed_price}
+                                                onChange={e => setData('proposed_price', e.target.value)}
+                                                className="mt-1 block w-full text-lg font-bold text-slate-800"
+                                                placeholder="Enter your budget..."
+                                                min="50000"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">Guideline price based on features: <span className="font-semibold text-indigo-600">Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span></p>
+                                            <InputError message={errors.proposed_price} className="mt-2" />
+                                        </div>
+                                    )}
 
                                     <div>
                                         <InputLabel htmlFor="external_link" value="External Link (Google Drive / Figma / Etc)" />
@@ -249,64 +395,112 @@ export default function Create({ auth, packages, selectedPackageId }) {
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-gray-500">Est. Time</span>
                                             <span className="font-medium">
-                                                {rushFee > 0 ? (
-                                                    <span className="text-indigo-600 font-bold">
-                                                        <span className="line-through text-gray-400 mr-2">{formatDuration(selectedPackage.duration_days)}</span>
-                                                        {Math.max(1, selectedPackage.duration_days - (rushFee / 25000))} Days
-                                                    </span>
+                                                {selectedPackage.is_negotiable ? (
+                                                    (() => {
+                                                        const features = selectedPackage.addons || selectedPackage.addon_features || [];
+                                                        const selected = features.filter(f => data.selected_features.includes(f.name));
+                                                        const days = 1 + selected.reduce((sum, f) => sum + (parseInt(f.estimate_days) || 1), 0);
+                                                        return days + " - " + (days + 2) + " Days";
+                                                    })()
                                                 ) : (
-                                                    <span>{formatDuration(selectedPackage.duration_days)}</span>
+                                                    rushFee > 0 ? (
+                                                        <span className="text-indigo-600 font-bold">
+                                                            <span className="line-through text-gray-400 mr-2">{formatDuration(selectedPackage.duration_days)}</span>
+                                                            {Math.max(1, selectedPackage.duration_days - (rushFee / 25000))} Days
+                                                        </span>
+                                                    ) : (
+                                                        <span>{formatDuration(selectedPackage.duration_days)}</span>
+                                                    )
                                                 )}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-500">Base Price</span>
-                                            <span className="font-medium">Rp {new Intl.NumberFormat('id-ID').format(selectedPackage.price)}</span>
-                                        </div>
-                                        {rushFee > 0 && (
-                                            <div className="flex justify-between items-center text-sm text-amber-600 font-bold bg-amber-50 p-2 rounded">
-                                                <span>Rush Fee</span>
-                                                <span>+ Rp {new Intl.NumberFormat('id-ID').format(rushFee)}</span>
-                                            </div>
+
+                                        {!selectedPackage.is_negotiable ? (
+                                            <>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="text-gray-500">Base Price</span>
+                                                    <span className="font-medium">Rp {new Intl.NumberFormat('id-ID').format(selectedPackage.price)}</span>
+                                                </div>
+                                                {rushFee > 0 && (
+                                                    <div className="flex justify-between items-center text-sm text-amber-600 font-bold bg-amber-50 p-2 rounded">
+                                                        <span>Rush Fee</span>
+                                                        <span>+ Rp {new Intl.NumberFormat('id-ID').format(rushFee)}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center text-sm text-slate-500">
+                                                    <span>Operational Fee</span>
+                                                    <span>+ Rp 5.000</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xl font-black text-slate-900 mt-6 pt-6 border-t-2 border-dashed border-slate-300">
+                                                    <span>Total</span>
+                                                    <span>Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                                    <p className="text-xs text-indigo-600 font-bold mb-1">NEGOTIATION MODE</p>
+                                                    <p className="text-sm text-gray-600">The price is negotiable. Based on your selected features:</p>
+
+                                                    {rushFee > 0 && (
+                                                        <div className="flex justify-between items-center text-sm text-amber-600 font-bold mt-2 bg-amber-50 p-1 rounded">
+                                                            <span>Express Fee (Tight Deadline)</span>
+                                                            <span>+ Rp {new Intl.NumberFormat('id-ID').format(rushFee)}</span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex justify-between items-center text-lg font-bold text-indigo-700 mt-2 border-t pt-2 border-indigo-200">
+                                                        <span>Ref. Price:</span>
+                                                        <span>Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span>
+                                                    </div>
+                                                </div>
+                                                {data.proposed_price > 0 && (
+                                                    <div className="flex justify-between items-center text-xl font-black text-slate-900 mt-6 pt-6 border-t-2 border-dashed border-slate-300">
+                                                        <span>Your Offer</span>
+                                                        <span>Rp {new Intl.NumberFormat('id-ID').format(data.proposed_price)}</span>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
-                                        <div className="flex justify-between items-center text-sm text-slate-500">
-                                            <span>Operational Fee</span>
-                                            <span>+ Rp 5.000</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xl font-black text-slate-900 mt-6 pt-6 border-t-2 border-dashed border-slate-300">
-                                            <span>Total</span>
-                                            <span>Rp {new Intl.NumberFormat('id-ID').format(totalPrice)}</span>
-                                        </div>
+
                                     </div>
                                 )}
 
-                                <div className="mb-8">
-                                    <InputLabel value="Payment Method" className="mb-3" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div
-                                            onClick={() => setData('payment_method', 'qris')}
-                                            className={`cursor-pointer p-3 rounded-lg border text-center transition-all ${data.payment_method === 'qris' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
-                                        >
-                                            QRIS
-                                        </div>
-                                        <div
-                                            onClick={() => setData('payment_method', 'va')}
-                                            className={`cursor-pointer p-3 rounded-lg border text-center transition-all ${data.payment_method === 'va' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
-                                        >
-                                            Transfer / VA
+                                {!selectedPackage?.is_negotiable ? (
+                                    <div className="mb-8">
+                                        <InputLabel value="Payment Method" className="mb-3" />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div
+                                                onClick={() => setData('payment_method', 'qris')}
+                                                className={`cursor-pointer p-3 rounded-lg border text-center transition-all ${data.payment_method === 'qris' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
+                                            >
+                                                QRIS
+                                            </div>
+                                            <div
+                                                onClick={() => setData('payment_method', 'va')}
+                                                className={`cursor-pointer p-3 rounded-lg border text-center transition-all ${data.payment_method === 'va' ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-600' : 'border-gray-200 hover:border-indigo-300'}`}
+                                            >
+                                                Transfer / VA
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="mb-8">
+                                        <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded border border-yellow-200">
+                                            Payment will be processed after your negotiation is approved by Admin.
+                                        </div>
+                                    </div>
+                                )}
 
                                 <button
                                     className="w-full justify-center py-3 text-base flex items-center font-black rounded-xl bg-yellow-400 text-slate-900 border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                                     disabled={processing}
                                 >
-                                    Pay & Secure Slot 🔒
+                                    {selectedPackage?.is_negotiable ? 'Submit Proposal 🤝' : 'Pay & Secure Slot 🔒'}
                                 </button>
 
                                 <p className="text-xs text-center text-gray-400 mt-4">
-                                    By clicking Pay, you agree to our Terms of Service.
+                                    By clicking {selectedPackage?.is_negotiable ? 'Submit' : 'Pay'}, you agree to our Terms of Service.
                                 </p>
                             </div>
                         </div>

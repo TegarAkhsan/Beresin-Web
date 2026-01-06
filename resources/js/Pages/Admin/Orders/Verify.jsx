@@ -26,6 +26,16 @@ export default function Verify({ auth, orders }) {
         });
     };
 
+    const [viewingOrder, setViewingOrder] = useState(null);
+
+    const openDetails = (order) => {
+        setViewingOrder(order);
+    };
+
+    const closeDetails = () => {
+        setViewingOrder(null);
+    };
+
     return (
         <AdminLayout
             user={auth.user}
@@ -59,6 +69,11 @@ export default function Verify({ auth, orders }) {
                                             <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2 py-0.5 rounded">
                                                 {order.package?.service?.name} - {order.package?.name}
                                             </span>
+                                            {order.is_negotiation && (
+                                                <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-0.5 rounded border border-yellow-200">
+                                                    Negotiation
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 font-bold text-gray-900">
                                             Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
@@ -72,7 +87,13 @@ export default function Verify({ auth, orders }) {
                                                 <span className="text-gray-400 italic">No proof</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 flex gap-2">
+                                            <button
+                                                onClick={() => openDetails(order)}
+                                                className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md text-sm font-medium transition"
+                                            >
+                                                Details
+                                            </button>
                                             <button
                                                 onClick={() => confirmApprove(order)}
                                                 className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition shadow-sm"
@@ -95,6 +116,7 @@ export default function Verify({ auth, orders }) {
                 </div>
             </div>
 
+            {/* Approval Modal */}
             <Modal show={confirmingApproval} onClose={closeModal}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -113,6 +135,153 @@ export default function Verify({ auth, orders }) {
                         </PrimaryButton>
                     </div>
                 </div>
+            </Modal>
+
+            {/* Details Modal */}
+            <Modal show={!!viewingOrder} onClose={closeDetails} maxWidth="2xl">
+                {viewingOrder && (
+                    <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">Order Details #{viewingOrder.order_number}</h2>
+                            <button onClick={closeDetails} className="text-gray-400 hover:text-gray-600">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-xs text-gray-500 uppercase font-bold">Customer</p>
+                                    <p className="font-medium">{viewingOrder.user.name}</p>
+                                    <p className="text-sm text-gray-600">{viewingOrder.user.email}</p>
+                                    <p className="text-sm text-gray-600">{viewingOrder.user.phone}</p>
+                                </div>
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-xs text-gray-500 uppercase font-bold">Package Info</p>
+                                    <p className="font-medium text-indigo-700">{viewingOrder.package?.service?.name}</p>
+                                    <p className="text-sm text-gray-700 font-bold">{viewingOrder.package?.name}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Deadline: {viewingOrder.deadline}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-gray-500 uppercase font-bold mb-1">Description / Project Notes</p>
+                                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 border border-gray-200">
+                                    {viewingOrder.description}
+                                </div>
+                            </div>
+
+                            {/* Negotiation Details */}
+                            {viewingOrder.is_negotiation && (
+                                <div className="border-t pt-4">
+                                    <h3 className="text-md font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                        <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">Negotiation Data</span>
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {viewingOrder.selected_features && viewingOrder.selected_features.length > 0 && (
+                                            <div>
+                                                <p className="text-xs text-gray-500 mb-1">Requested Features:</p>
+                                                <ul className="space-y-1">
+                                                    {viewingOrder.selected_features.map((f, i) => (
+                                                        <li key={i} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-1 rounded border border-indigo-100 inline-block mr-1 mb-1">
+                                                            {f}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1">Proposed Budget:</p>
+                                            <p className="text-lg font-bold text-green-600">Rp {new Intl.NumberFormat('id-ID').format(viewingOrder.amount)}</p>
+
+                                            {/* System Calculation Display */}
+                                            {(() => {
+                                                const features = viewingOrder.package?.addons || viewingOrder.package?.addon_features || [];
+                                                const selectedNames = viewingOrder.selected_features || [];
+
+                                                let systemPrice = 0;
+                                                let totalDays = 1;
+
+                                                if (features.length > 0 && selectedNames.length > 0) {
+                                                    const selected = features.filter(f => selectedNames.includes(f.name));
+                                                    systemPrice = selected.reduce((sum, f) => sum + parseFloat(f.price), 0);
+                                                    totalDays += selected.reduce((sum, f) => sum + (parseInt(f.estimate_days) || 1), 0);
+                                                }
+
+                                                // Calculate Rush Fee (Mirroring Create.jsx logic)
+                                                let rushFee = 0;
+                                                if (viewingOrder.deadline && viewingOrder.created_at) {
+                                                    const createdDate = new Date(viewingOrder.created_at);
+                                                    const targetDate = new Date(createdDate);
+                                                    targetDate.setDate(targetDate.getDate() + totalDays);
+                                                    targetDate.setHours(0, 0, 0, 0);
+
+                                                    const deadlineDate = new Date(viewingOrder.deadline);
+                                                    deadlineDate.setHours(0, 0, 0, 0);
+
+                                                    // If deadline is earlier than target date
+                                                    const diffTime = targetDate - deadlineDate;
+                                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                                                    if (diffDays > 0) {
+                                                        rushFee = diffDays * 50000;
+                                                    }
+                                                }
+
+                                                const totalSystemPrice = systemPrice + rushFee;
+
+                                                return (
+                                                    <div className="mt-2 pt-2 border-t border-dashed">
+                                                        <p className="text-xs text-gray-400">System Ref. Price (Normal + Rush):</p>
+                                                        <p className="text-sm font-bold text-gray-500">
+                                                            Rp {new Intl.NumberFormat('id-ID').format(totalSystemPrice)}
+                                                            {rushFee > 0 && <span className="text-amber-500 text-xs ml-1">(+{new Intl.NumberFormat('id-ID').format(rushFee)} Rush)</span>}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {viewingOrder.student_card && (
+                                            <div className="col-span-2 mt-2">
+                                                <p className="text-xs text-gray-500 mb-1">Student ID Card (KTM):</p>
+                                                <a href={`/storage/${viewingOrder.student_card}`} target="_blank" className="flex items-center gap-2 text-indigo-600 hover:underline bg-indigo-50 p-2 rounded w-fit">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                                    View Student Card
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Files */}
+                            {(viewingOrder.reference_file || viewingOrder.previous_project_file) && (
+                                <div className="border-t pt-4 flex gap-4">
+                                    {viewingOrder.reference_file && (
+                                        <a href={`/storage/${viewingOrder.reference_file}`} target="_blank" className="text-sm text-blue-600 hover:underline">
+                                            📄 Reference File
+                                        </a>
+                                    )}
+                                    {viewingOrder.previous_project_file && (
+                                        <a href={`/storage/${viewingOrder.previous_project_file}`} target="_blank" className="text-sm text-blue-600 hover:underline">
+                                            📁 Project Assets
+                                        </a>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-3 pt-4 border-t">
+                            <SecondaryButton onClick={closeDetails}>Close</SecondaryButton>
+                            <PrimaryButton className="bg-green-600 hover:bg-green-700" onClick={() => { closeDetails(); confirmApprove(viewingOrder); }}>
+                                Approve This Order
+                            </PrimaryButton>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </AdminLayout>
     );

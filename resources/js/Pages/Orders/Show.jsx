@@ -405,6 +405,21 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                             {order.description}
                                         </p>
                                     </div>
+
+                                    {/* Selected Add-ons / Features (Dynamic) */}
+                                    {order.selected_features && order.selected_features.length > 0 && (
+                                        <div className="pt-2 border-t mt-2">
+                                            <span className="text-gray-500 block mb-1">Selected Features</span>
+                                            <ul className="space-y-1">
+                                                {order.selected_features.map((feature, index) => (
+                                                    <li key={index} className="flex items-center text-xs text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
+                                                        <svg className="w-3 h-3 text-indigo-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                        {feature}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

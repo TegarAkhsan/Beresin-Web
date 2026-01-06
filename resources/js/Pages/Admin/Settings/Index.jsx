@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import InputError from '@/Components/InputError';
+import { useState } from 'react';
 
 export default function SettingsIndex({ auth, settings }) {
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
@@ -14,6 +15,8 @@ export default function SettingsIndex({ auth, settings }) {
         qris_image: null,
     });
 
+    const [activeTab, setActiveTab] = useState('general');
+
     const submit = (e) => {
         e.preventDefault();
         post(route('admin.settings.update'), {
@@ -21,116 +24,184 @@ export default function SettingsIndex({ auth, settings }) {
         });
     };
 
+    const tabs = [
+        { id: 'general', label: 'General Settings' },
+        { id: 'logo', label: 'Logo Configuration' },
+        { id: 'qris', label: 'QRIS Payment' },
+    ];
+
     return (
         <AdminLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">General Settings</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">System Settings</h2>}
         >
             <Head title="Settings" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            <h3 className="text-lg font-medium mb-4">Invoice Configuration</h3>
-
-                            <form onSubmit={submit} className="space-y-6 max-w-xl">
-
-                                <div>
-                                    <InputLabel htmlFor="invoice_name" value="Company Name (Invoice Header)" />
-                                    <TextInput
-                                        id="invoice_name"
-                                        type="text"
-                                        className="mt-1 block w-full"
-                                        value={data.invoice_name}
-                                        onChange={(e) => setData('invoice_name', e.target.value)}
-                                        required
-                                    />
-                                    <InputError message={errors.invoice_name} className="mt-2" />
+                    <div className="flex flex-col md:flex-row gap-6">
+                        {/* Sidebar Menu */}
+                        <div className="w-full md:w-64 flex-shrink-0">
+                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                                <div className="p-4 flex flex-col space-y-2">
+                                    {tabs.map(tab => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                                    : 'text-gray-600 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
                                 </div>
+                            </div>
+                        </div>
 
-                                <div>
-                                    <InputLabel htmlFor="invoice_address" value="Company Address" />
-                                    <textarea
-                                        id="invoice_address"
-                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                        rows="4"
-                                        value={data.invoice_address}
-                                        onChange={(e) => setData('invoice_address', e.target.value)}
-                                        required
-                                    ></textarea>
-                                    <InputError message={errors.invoice_address} className="mt-2" />
-                                </div>
+                        {/* Content Area */}
+                        <div className="flex-1 bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            <div className="p-6 text-gray-900 min-h-[500px]">
+                                <form onSubmit={submit} className="max-w-xl">
 
-                                <div>
-                                    <InputLabel htmlFor="whatsapp_number" value="WhatsApp Number" />
-                                    <TextInput
-                                        id="whatsapp_number"
-                                        type="text"
-                                        className="mt-1 block w-full"
-                                        value={data.whatsapp_number}
-                                        onChange={(e) => setData('whatsapp_number', e.target.value)}
-                                        required
-                                    />
-                                    <InputError message={errors.whatsapp_number} className="mt-2" />
-                                </div>
+                                    {/* GENERAL TAB */}
+                                    {activeTab === 'general' && (
+                                        <div className="space-y-6 animate-fade-in-up">
+                                            <h3 className="text-lg font-medium mb-4 pb-2 border-b">General Information</h3>
+                                            <div>
+                                                <InputLabel htmlFor="invoice_name" value="Company Name (Invoice Header)" />
+                                                <TextInput
+                                                    id="invoice_name"
+                                                    type="text"
+                                                    className="mt-1 block w-full"
+                                                    value={data.invoice_name}
+                                                    onChange={(e) => setData('invoice_name', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError message={errors.invoice_name} className="mt-2" />
+                                            </div>
 
-                                <div>
-                                    <InputLabel htmlFor="invoice_logo" value="Invoice Logo (Optional)" />
-                                    <input
-                                        type="file"
-                                        id="invoice_logo"
-                                        className="mt-1 block w-full text-sm text-slate-500
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-indigo-50 file:text-indigo-700
-                                            hover:file:bg-indigo-100"
-                                        onChange={(e) => setData('invoice_logo', e.target.files[0])}
-                                        accept="image/*"
-                                    />
-                                    <InputError message={errors.invoice_logo} className="mt-2" />
+                                            <div>
+                                                <InputLabel htmlFor="invoice_address" value="Company Address" />
+                                                <textarea
+                                                    id="invoice_address"
+                                                    className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                                    rows="4"
+                                                    value={data.invoice_address}
+                                                    onChange={(e) => setData('invoice_address', e.target.value)}
+                                                    required
+                                                ></textarea>
+                                                <InputError message={errors.invoice_address} className="mt-2" />
+                                            </div>
 
-                                    {settings.invoice_logo && (
-                                        <div className="mt-4">
-                                            <p className="text-sm text-gray-500 mb-2">Current Logo:</p>
-                                            <img src={`/storage/${settings.invoice_logo}`} alt="Current Logo" className="h-16 object-contain" />
+                                            <div>
+                                                <InputLabel htmlFor="whatsapp_number" value="WhatsApp Number" />
+                                                <TextInput
+                                                    id="whatsapp_number"
+                                                    type="text"
+                                                    className="mt-1 block w-full"
+                                                    value={data.whatsapp_number}
+                                                    onChange={(e) => setData('whatsapp_number', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError message={errors.whatsapp_number} className="mt-2" />
+                                                <p className="text-xs text-gray-500 mt-1">Format: 628...</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-4 pt-4">
+                                                <PrimaryButton disabled={processing}>Save General Settings</PrimaryButton>
+                                                {recentlySuccessful && <p className="text-sm text-green-600">Saved.</p>}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
 
-                                <div>
-                                    <InputLabel htmlFor="qris_image" value="QRIS Image (Optional)" />
-                                    <input
-                                        type="file"
-                                        id="qris_image"
-                                        className="mt-1 block w-full text-sm text-slate-500
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-indigo-50 file:text-indigo-700
-                                            hover:file:bg-indigo-100"
-                                        onChange={(e) => setData('qris_image', e.target.files[0])}
-                                        accept="image/*"
-                                    />
-                                    <InputError message={errors.qris_image} className="mt-2" />
+                                    {/* LOGO TAB */}
+                                    {activeTab === 'logo' && (
+                                        <div className="space-y-6 animate-fade-in-up">
+                                            <h3 className="text-lg font-medium mb-4 pb-2 border-b">Logo Configuration</h3>
 
-                                    {settings.qris_image && (
-                                        <div className="mt-4">
-                                            <p className="text-sm text-gray-500 mb-2">Current QRIS:</p>
-                                            <img src={`/storage/${settings.qris_image}`} alt="Current QRIS" className="h-32 object-contain border rounded-lg" />
+                                            <div>
+                                                <InputLabel htmlFor="invoice_logo" value="Upload New Logo" />
+                                                <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 transition-colors">
+                                                    <div className="space-y-1 text-center">
+                                                        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                        </svg>
+                                                        <div className="flex text-sm text-gray-600">
+                                                            <label htmlFor="invoice_logo" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                                                <span>Upload a file</span>
+                                                                <input id="invoice_logo" name="invoice_logo" type="file" className="sr-only" onChange={(e) => setData('invoice_logo', e.target.files[0])} accept="image/*" />
+                                                            </label>
+                                                            <p className="pl-1">or drag and drop</p>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 1MB</p>
+                                                    </div>
+                                                </div>
+                                                {data.invoice_logo && <p className="text-sm text-indigo-600 mt-2">Selected: {data.invoice_logo.name}</p>}
+                                                <InputError message={errors.invoice_logo} className="mt-2" />
+                                            </div>
+
+                                            {settings.invoice_logo && (
+                                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                                                    <p className="text-sm text-gray-500 mb-2">Current Logo Preview:</p>
+                                                    <div className="border p-2 bg-white rounded flex items-center justify-center">
+                                                        <img src={`/storage/${settings.invoice_logo}`} alt="Current Logo" className="h-20 object-contain" />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-4 pt-4">
+                                                <PrimaryButton disabled={processing}>Save Logo Settings</PrimaryButton>
+                                                {recentlySuccessful && <p className="text-sm text-green-600">Saved.</p>}
+                                            </div>
                                         </div>
                                     )}
-                                </div>
 
-                                <div className="flex items-center gap-4">
-                                    <PrimaryButton disabled={processing}>Save Settings</PrimaryButton>
+                                    {/* QRIS TAB */}
+                                    {activeTab === 'qris' && (
+                                        <div className="space-y-6 animate-fade-in-up">
+                                            <h3 className="text-lg font-medium mb-4 pb-2 border-b">QRIS Payment Configuration</h3>
 
-                                    {recentlySuccessful && (
-                                        <p className="text-sm text-green-600">Saved.</p>
+                                            <div>
+                                                <InputLabel htmlFor="qris_image" value="Upload QRIS Image" />
+                                                <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 transition-colors">
+                                                    <div className="space-y-1 text-center">
+                                                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                        </svg>
+                                                        <div className="flex text-sm text-gray-600">
+                                                            <label htmlFor="qris_image" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                                                <span>Upload a file</span>
+                                                                <input id="qris_image" name="qris_image" type="file" className="sr-only" onChange={(e) => setData('qris_image', e.target.files[0])} accept="image/*" />
+                                                            </label>
+                                                            <p className="pl-1">or drag and drop</p>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500">PNG, JPG, GIF up to 1MB</p>
+                                                    </div>
+                                                </div>
+                                                {data.qris_image && <p className="text-sm text-indigo-600 mt-2">Selected: {data.qris_image.name}</p>}
+                                                <InputError message={errors.qris_image} className="mt-2" />
+                                            </div>
+
+                                            {settings.qris_image && (
+                                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                                                    <p className="text-sm text-gray-500 mb-2">Current QRIS Preview:</p>
+                                                    <div className="border p-2 bg-white rounded flex items-center justify-center">
+                                                        <img src={`/storage/${settings.qris_image}`} alt="Current QRIS" className="max-w-full h-48 object-contain" />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-4 pt-4">
+                                                <PrimaryButton disabled={processing}>Save QRIS Settings</PrimaryButton>
+                                                {recentlySuccessful && <p className="text-sm text-green-600">Saved.</p>}
+                                            </div>
+                                        </div>
                                     )}
-                                </div>
-                            </form>
+
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>

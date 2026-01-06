@@ -105,16 +105,33 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         file: null,
         version_label: '',
         external_link: '',
-        note: ''
+        note: '',
+        milestone_id: ''
     });
+
+    const [uploadType, setUploadType] = useState('regular'); // regular, milestone
 
     const openUploadModal = (order) => {
         setSelectedOrder(order);
+
+        let type = 'regular';
+        let defaultMilestoneId = '';
+
+        if (order.milestones && order.milestones.length > 0) {
+            type = 'milestone';
+            // Find active milestone
+            const active = order.milestones.find(m => ['in_progress', 'revision'].includes(m.status));
+            if (active) defaultMilestoneId = active.id;
+        }
+
+        setUploadType(type);
+
         setData({
             file: null,
             version_label: '',
             external_link: '',
-            note: ''
+            note: '',
+            milestone_id: defaultMilestoneId
         });
         setShowUploadModal(true);
     };
@@ -126,13 +143,22 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
     const submitUpload = (e) => {
         e.preventDefault();
-        post(route('joki.orders.upload', selectedOrder.id), {
-            onSuccess: () => {
-                reset('file', 'version_label', 'note');
-                // alert('File uploaded successfully.'); -- Removed to use Toast
-                closeUploadModal();
-            }
-        });
+
+        if (uploadType === 'milestone') {
+            post(route('joki.orders.milestone', selectedOrder.id), {
+                onSuccess: () => {
+                    reset();
+                    closeUploadModal();
+                }
+            });
+        } else {
+            post(route('joki.orders.upload', selectedOrder.id), {
+                onSuccess: () => {
+                    reset();
+                    closeUploadModal();
+                }
+            });
+        }
     };
 
 
@@ -470,7 +496,42 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                     {/* Main Form */}
                     <form onSubmit={submitUpload} autoComplete="off" key={selectedOrder ? selectedOrder.id : 'upload-form'}>
-                        {/* Link Input */}
+
+                        {/* Milestone Selector */}
+                        {uploadType === 'milestone' && selectedOrder?.milestones && (
+                            <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                                <label className="block text-sm font-bold text-indigo-900 mb-2">
+                                    Select Milestone to Submit
+                                </label>
+                                <select
+                                    value={data.milestone_id}
+                                    onChange={(e) => setData('milestone_id', e.target.value)}
+                                    className="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
+                                >
+                                    <option value="" disabled>Select a milestone...</option>
+                                    {selectedOrder.milestones.map((m) => {
+                                        const isLocked = !['in_progress', 'revision'].includes(m.status);
+                                        return (
+                                            <option key={m.id} value={m.id} disabled={isLocked}>
+                                                {m.sort_order}. {m.name} ({m.weight}%) - {m.status.replace('_', ' ').toUpperCase()} {isLocked ? '(Locked/Done)' : ''}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+
+                                {data.milestone_id && (() => {
+                                    const active = selectedOrder.milestones.find(m => m.id == data.milestone_id);
+                                    return active ? (
+                                        <div className="text-xs text-indigo-700 mt-2 bg-white/50 p-2 rounded">
+                                            <strong>Requirements:</strong> {active.description || 'No specific requirements.'}
+                                        </div>
+                                    ) : null;
+                                })()}
+                                {errors.milestone_id && <div className="text-red-500 text-sm mt-1">{errors.milestone_id}</div>}
+                            </div>
+                        )}
+
+                        {/* Link Input - Hide for milestone if not needed, or keep optional */}
                         <div className="mb-6">
                             <label className="block text-sm font-bold text-gray-700 mb-2">
                                 External Resource Link (Optional)
@@ -490,7 +551,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                         <div className="pt-2">
                             <label className="block text-sm font-bold text-gray-700 mb-4">
-                                Upload Source File & Notes
+                                Upload Proof / Deliverable
                             </label>
                             <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:bg-gray-50 transition-colors mb-4 cursor-pointer group">
                                 <input
@@ -558,7 +619,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                         <div className="flex justify-end gap-3 space-x-3">
                             <SecondaryButton onClick={closeUploadModal}>Cancel</SecondaryButton>
-                            <PrimaryButton disabled={processing} className="bg-indigo-600">Submit Deliverables</PrimaryButton>
+                            <PrimaryButton disabled={processing} className="bg-indigo-600">
+                                {uploadType === 'milestone' ? 'Submit Milestone' : 'Submit Deliverables'}
+                            </PrimaryButton>
                         </div>
                     </form>
                 </div>

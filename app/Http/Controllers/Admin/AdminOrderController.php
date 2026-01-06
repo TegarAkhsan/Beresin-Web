@@ -14,7 +14,7 @@ class AdminOrderController extends Controller
 {
     public function verify()
     {
-        $orders = Order::with(['user', 'package.service'])
+        $orders = Order::with(['user', 'package.service', 'package.addons'])
             ->whereIn('status', ['pending_payment', 'waiting_approval'])
             ->latest()
             ->paginate(10);
@@ -132,22 +132,45 @@ class AdminOrderController extends Controller
 
             $jokiId = $leastBusyJoki->id;
             $jokiName = $leastBusyJoki->name;
-            // Fee logic for Auto: Default to Package fee logic or 0
-            // Since User requested manual input only for manual assign, we can default Auto to 0
-            // Or try to fetch from package if exists (legacy support)
-            $fee = $order->package->joki_fee ?? 0;
         } else {
             // Manual Assignment
             $jokiName = User::find($jokiId)->name ?? 'Joki';
-            // Use package fee or 0, ignoring manual input as requested
-            $fee = $order->package->joki_fee ?? 0;
         }
+
+        // Calculate Fee based on User Rules
+        // Base Price: 65% to Joki
+        // Rush Fee: 80% to Joki
+        $baseShare = $order->base_price * 0.65;
+        $rushShare = $order->rush_fee * 0.80;
+        $fee = $baseShare + $rushShare;
+
+        // Legacy/Fallback check if needed, but the formula is strict now.
 
         $order->update([
             'joki_id' => $jokiId,
             'joki_fee' => $fee,
             'status' => 'in_progress',
         ]);
+
+        // Generate Milestones if they don't exist
+        $serviceId = $order->package->service_id;
+        $order->load('milestones');
+        if ($order->milestones->isEmpty()) {
+            $templates = \App\Models\MilestoneTemplate::where('service_id', $serviceId)
+                ->orderBy('sort_order')
+                ->get();
+
+            foreach ($templates as $template) {
+                \App\Models\OrderMilestone::create([
+                    'order_id' => $order->id,
+                    'name' => $template->name,
+                    'description' => $template->requirements,
+                    'weight' => $template->weight,
+                    'sort_order' => $template->sort_order,
+                    'status' => $template->sort_order === 1 ? 'in_progress' : 'pending',
+                ]);
+            }
+        }
 
         return back()->with('message', "Task assigned to {$jokiName} successfully (" . ucfirst($request->assignment_type) . "). Fee: Rp " . number_format($fee, 0, ',', '.'));
     }
@@ -197,11 +220,31 @@ class AdminOrderController extends Controller
 
             if ($candidate) {
                 \Illuminate\Support\Facades\Log::info("BatchAutoAssign: Assigned to {$candidate->name} ({$candidate->id})");
+
+                $baseShare = $order->base_price * 0.65;
+                $rushShare = $order->rush_fee * 0.80;
+                $fee = $baseShare + $rushShare;
+
                 $order->update([
                     'joki_id' => $candidate->id,
-                    'joki_fee' => $order->package->joki_fee ?? 0,
+                    'joki_fee' => $fee,
                     'status' => 'in_progress'
                 ]);
+
+                // Generate Milestones
+                $serviceId = $order->package->service_id;
+                $templates = \App\Models\MilestoneTemplate::where('service_id', $serviceId)->orderBy('sort_order')->get();
+                foreach ($templates as $template) {
+                    \App\Models\OrderMilestone::create([
+                        'order_id' => $order->id,
+                        'name' => $template->name,
+                        'description' => $template->requirements,
+                        'weight' => $template->weight,
+                        'sort_order' => $template->sort_order,
+                        'status' => $template->sort_order === 1 ? 'in_progress' : 'pending',
+                    ]);
+                }
+
                 $assignedCount++;
             } else {
                 \Illuminate\Support\Facades\Log::warning("BatchAutoAssign: No candidate found for Order {$order->id}");

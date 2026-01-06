@@ -22,7 +22,7 @@ class JokiDashboardController extends Controller
             ->get();
 
         // Active Workspace: Work started
-        $activeTasks = Order::with(['package.service', 'user', 'chats', 'files'])
+        $activeTasks = Order::with(['package.service', 'user', 'chats', 'files', 'milestones'])
             ->where('joki_id', $user->id)
             ->whereIn('status', ['in_progress', 'review', 'revision'])
             ->whereNotNull('started_at')
@@ -145,5 +145,38 @@ class JokiDashboardController extends Controller
         $order->update(['external_link' => $request->external_link]);
 
         return back()->with('message', 'Link updated successfully.');
+    }
+
+    public function uploadMilestone(Request $request, Order $order)
+    {
+        if ($order->joki_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'milestone_id' => 'required|exists:order_milestones,id',
+            'file' => 'required|file|max:10240', // 10MB
+            'note' => 'nullable|string'
+        ]);
+
+        $milestone = $order->milestones()->findOrFail($request->milestone_id);
+
+        if ($milestone->status !== 'in_progress' && $milestone->status !== 'revision') {
+            return back()->withErrors(['milestone_id' => 'This milestone is not active.']);
+        }
+
+        $path = $request->file('file')->store('milestone_proofs', 'public');
+
+        $milestone->update([
+            'status' => 'submitted',
+            'file_path' => $path,
+            'joki_notes' => $request->note,
+            'submitted_at' => now()
+        ]);
+
+        // Update Order to Review status to notify Admin
+        $order->update(['status' => 'review']);
+
+        return back()->with('message', 'Milestone submitted for review.');
     }
 }

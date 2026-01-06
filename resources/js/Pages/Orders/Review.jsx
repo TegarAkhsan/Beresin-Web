@@ -153,6 +153,23 @@ export default function Review({ auth, order }) {
 
                                 {order.status === 'review' ? (
                                     <div className="space-y-4">
+
+                                        {/* Milestone Info */}
+                                        {order.milestones && order.milestones.length > 0 && (() => {
+                                            const current = order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
+                                            const isLast = current && order.milestones[order.milestones.length - 1].id === current.id;
+
+                                            if (current) {
+                                                return (
+                                                    <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-900">
+                                                        <span className="block text-xs font-bold uppercase text-indigo-500 mb-1">Current Milestone</span>
+                                                        <span className="font-black text-lg block">{current.name}</span>
+                                                        <span className="text-xs text-indigo-600">Weight: {current.weight}%</span>
+                                                    </div>
+                                                );
+                                            }
+                                        })()}
+
                                         <div className="flex items-center justify-between mb-2">
                                             <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Revision Limit</span>
                                             <span className={`text-xs font-bold px-2 py-1 rounded ${order.revision_count >= (order.package?.max_revisions || 3) ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -165,7 +182,13 @@ export default function Review({ auth, order }) {
                                             className="w-full py-4 bg-emerald-500 text-white font-black rounded-xl border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex items-center justify-center gap-2"
                                         >
                                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                                            Terima Hasil & Selesai
+                                            {order.milestones && order.milestones.length > 0 ? (
+                                                (() => {
+                                                    const current = order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
+                                                    const isLast = current && order.milestones[order.milestones.length - 1].id === current.id;
+                                                    return isLast ? "Approve & Finish Project" : "Approve Milestone & Continue";
+                                                })()
+                                            ) : "Terima Hasil & Selesai"}
                                         </button>
 
                                         {order.revision_count >= (order.package?.max_revisions || 3) ? (

@@ -12,7 +12,7 @@ class AdminServiceController extends Controller
 {
     public function index()
     {
-        $services = Service::with('packages')->get();
+        $services = Service::with('packages.addons')->get();
 
         return Inertia::render('Admin/Services/Index', [
             'services' => $services,

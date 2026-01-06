@@ -34,13 +34,30 @@ class Order extends Model
         'reference_file',
         'previous_project_file',
         'joki_fee',
-        'revision_reason'
+        'revision_reason',
+        'revision_count',
+        'is_negotiation',
+        'student_card',
+        'proposed_price',
+        'negotiation_deadline',
+        'selected_features',
+        'revision_file',
+        'base_price',
+        'rush_fee',
+        'platform_fee',
+        'additional_revision_fee',
+        'refund_amount',
+        'refund_status',
+        'cancellation_reason'
     ];
 
     protected $casts = [
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
         'deadline' => 'date',
+        'negotiation_deadline' => 'date',
+        'is_negotiation' => 'boolean',
+        'selected_features' => 'array',
     ];
 
     public function user()
@@ -56,6 +73,11 @@ class Order extends Model
     public function joki()
     {
         return $this->belongsTo(User::class, 'joki_id');
+    }
+
+    public function milestones()
+    {
+        return $this->hasMany(OrderMilestone::class)->orderBy('sort_order');
     }
 
     public function reviews()

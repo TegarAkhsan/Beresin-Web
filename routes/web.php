@@ -41,6 +41,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::put('/packages/{package}', [App\Http\Controllers\Admin\AdminPackageController::class, 'update'])->name('packages.update');
     Route::delete('/packages/{package}', [App\Http\Controllers\Admin\AdminPackageController::class, 'destroy'])->name('packages.destroy');
 
+    // Addon Management
+    Route::post('/packages/{package}/addons', [App\Http\Controllers\Admin\AdminPackageAddonController::class, 'store'])->name('packages.addons.store');
+    Route::put('/addons/{addon}', [App\Http\Controllers\Admin\AdminPackageAddonController::class, 'update'])->name('addons.update');
+    Route::delete('/addons/{addon}', [App\Http\Controllers\Admin\AdminPackageAddonController::class, 'destroy'])->name('addons.destroy');
+
     // Transaction Report
     Route::get('/transactions', [App\Http\Controllers\Admin\AdminTransactionController::class, 'index'])->name('transactions.index');
 
@@ -72,6 +77,7 @@ Route::middleware('auth')->group(function () {
     // Joki Task Actions
     Route::post('/joki/orders/{order}/start', [App\Http\Controllers\JokiDashboardController::class, 'startTask'])->name('joki.orders.start');
     Route::post('/joki/orders/{order}/upload', [App\Http\Controllers\JokiDashboardController::class, 'uploadResult'])->name('joki.orders.upload');
+    Route::post('/joki/orders/{order}/milestone', [App\Http\Controllers\JokiDashboardController::class, 'uploadMilestone'])->name('joki.orders.milestone');
     Route::post('/joki/orders/{order}/link', [App\Http\Controllers\JokiDashboardController::class, 'updateLink'])->name('joki.orders.link');
 
     // Chat Routes (Customer)
