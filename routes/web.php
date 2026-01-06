@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}', [App\Http\Controllers\OrderController::class, 'update'])->name('orders.update');
     Route::post('/orders/{order}/accept', [App\Http\Controllers\OrderController::class, 'acceptResult'])->name('orders.accept');
     Route::post('/orders/{order}/revision', [App\Http\Controllers\OrderController::class, 'requestRevision'])->name('orders.revision');
+    Route::post('/orders/{order}/refund', [App\Http\Controllers\OrderController::class, 'requestRefund'])->name('orders.refund');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

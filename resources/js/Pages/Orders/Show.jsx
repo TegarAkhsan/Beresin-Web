@@ -321,13 +321,36 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                             {/* COMPLETED / REVIEW / REVISION / IN_PROGRESS */}
                             {order.status !== 'pending_payment' && order.status !== 'waiting_approval' && (
                                 <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] p-6 space-y-6">
-                                    <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-600 shadow-[4px_4px_0px_0px_rgba(22,163,74,1)] text-center">
-                                        <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                    {order.status === 'in_progress' ? (
+                                        <div className="bg-blue-50 p-6 rounded-2xl border-2 border-blue-600 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] text-center">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 animate-pulse">
+                                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                {order.milestones && order.milestones.length > 0
+                                                    ? (() => {
+                                                        const current = order.milestones.find(m => m.status === 'in_progress');
+                                                        return current ? `Sedang Mengerjakan: ${current.name}` : "Pengerjaan Dilanjutkan";
+                                                    })()
+                                                    : "Pesanan Sedang Dikerjakan"
+                                                }
+                                            </h3>
+                                            <p className="text-gray-600">
+                                                {order.milestones && order.milestones.length > 0
+                                                    ? "Tim kami sedang mengerjakan milestone ini. Harap tunggu update selanjutnya."
+                                                    : "Tim kami sedang memproses pesanan Anda. Harap tunggu notifikasi selanjutnya."
+                                                }
+                                            </p>
                                         </div>
-                                        <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Verified!</h3>
-                                        <p className="text-gray-600">Your order is being processed by our team.</p>
-                                    </div>
+                                    ) : (
+                                        <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-600 shadow-[4px_4px_0px_0px_rgba(22,163,74,1)] text-center">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                                                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Verified!</h3>
+                                            <p className="text-gray-600">Your order is being processed by our team.</p>
+                                        </div>
+                                    )}
 
                                     {/* Result Section */}
                                     {order.result_file && (
@@ -388,15 +411,33 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                         <span className="text-gray-500 block mb-1">Package</span>
                                         <span className="font-bold block text-gray-800">{order.package.service.name}</span>
                                         <span className="text-indigo-600 font-bold">{order.package.name}</span>
-                                        {Array.isArray(order.package.features) && order.package.features.length > 0 && (
-                                            <ul className="mt-2 space-y-1">
-                                                {order.package.features.map((feature, index) => (
-                                                    <li key={index} className="flex items-start text-xs text-gray-600">
-                                                        <svg className="w-3 h-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                                        {feature}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                        {(() => {
+                                            let feats = order.package.features;
+                                            if (typeof feats === 'string') {
+                                                try {
+                                                    feats = JSON.parse(feats);
+                                                } catch (e) {
+                                                    console.error("Failed to parse features", e);
+                                                    feats = [];
+                                                }
+                                            }
+
+                                            if (Array.isArray(feats) && feats.length > 0) {
+                                                return (
+                                                    <ul className="mt-2 space-y-1">
+                                                        {feats.map((feature, index) => (
+                                                            <li key={index} className="flex items-start text-xs text-gray-600">
+                                                                <svg className="w-3 h-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                                                {feature}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                );
+                                            }
+                                            return <p className="text-xs text-gray-400 italic mt-1">No specific features listed.</p>;
+                                        })()}
+                                        {Array.isArray(order.package.features) && order.package.features.length > 0 && false && ( // Keeping original logic disabled or removed
+                                            <ul className="mt-2 space-y-1"></ul>
                                         )}
                                     </div>
                                     <div className="pt-2">

@@ -163,7 +163,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->load(['package.service', 'joki', 'user']);
+        $order->load(['package.service', 'joki', 'user', 'milestones']);
         $settings = \App\Models\Setting::whereIn('key', ['whatsapp_number', 'qris_image'])->pluck('value', 'key');
 
         return Inertia::render('Orders/Show', [
@@ -363,5 +363,28 @@ class OrderController extends Controller
         ]);
 
         return back()->with('message', 'Revision requested. The Joki has been notified.');
+    }
+
+    public function requestRefund(Request $request, Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:2000',
+        ]);
+
+        // Ensure order is eligible for refund (not completed)
+        if ($order->status === 'completed') {
+            return back()->with('error', 'Order already completed. Cannot request refund.');
+        }
+
+        $order->update([
+            'status' => 'refund_requested',
+            'refund_reason' => $request->input('reason'),
+        ]);
+
+        return back()->with('message', 'Permintaan refund telah dikirim ke Admin untuk verifikasi.');
     }
 }

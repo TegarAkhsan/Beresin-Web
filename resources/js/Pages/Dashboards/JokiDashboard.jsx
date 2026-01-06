@@ -497,38 +497,63 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                     {/* Main Form */}
                     <form onSubmit={submitUpload} autoComplete="off" key={selectedOrder ? selectedOrder.id : 'upload-form'}>
 
-                        {/* Milestone Selector */}
+                        {/* Milestone Selector or Revision Indicator */}
                         {uploadType === 'milestone' && selectedOrder?.milestones && (
-                            <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-                                <label className="block text-sm font-bold text-indigo-900 mb-2">
-                                    Select Milestone to Submit
-                                </label>
-                                <select
-                                    value={data.milestone_id}
-                                    onChange={(e) => setData('milestone_id', e.target.value)}
-                                    className="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
-                                >
-                                    <option value="" disabled>Select a milestone...</option>
-                                    {selectedOrder.milestones.map((m) => {
-                                        const isLocked = !['in_progress', 'revision'].includes(m.status);
-                                        return (
-                                            <option key={m.id} value={m.id} disabled={isLocked}>
-                                                {m.sort_order}. {m.name} ({m.weight}%) - {m.status.replace('_', ' ').toUpperCase()} {isLocked ? '(Locked/Done)' : ''}
-                                            </option>
-                                        );
-                                    })}
-                                </select>
-
-                                {data.milestone_id && (() => {
-                                    const active = selectedOrder.milestones.find(m => m.id == data.milestone_id);
-                                    return active ? (
-                                        <div className="text-xs text-indigo-700 mt-2 bg-white/50 p-2 rounded">
-                                            <strong>Requirements:</strong> {active.description || 'No specific requirements.'}
+                            selectedOrder.status === 'revision' ? (
+                                <div className="mb-6 bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm">
+                                            R
                                         </div>
-                                    ) : null;
-                                })()}
-                                {errors.milestone_id && <div className="text-red-500 text-sm mt-1">{errors.milestone_id}</div>}
-                            </div>
+                                        <div>
+                                            <h3 className="font-bold text-orange-800">Revision Mode</h3>
+                                            <p className="text-xs text-orange-700">You are uploading a revision for the current milestone.</p>
+                                        </div>
+                                    </div>
+                                    {/* Hidden input to ensure milestone_id is still passed */}
+                                    <input type="hidden" value={data.milestone_id} />
+
+                                    {data.milestone_id && (() => {
+                                        const active = selectedOrder.milestones.find(m => m.id == data.milestone_id);
+                                        return active ? (
+                                            <div className="text-sm font-medium text-gray-700 mt-2 bg-white/60 p-2 rounded border border-orange-100">
+                                                Active Milestone: <strong>{active.name}</strong>
+                                            </div>
+                                        ) : null;
+                                    })()}
+                                </div>
+                            ) : (
+                                <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+                                    <label className="block text-sm font-bold text-indigo-900 mb-2">
+                                        Select Milestone to Submit
+                                    </label>
+                                    <select
+                                        value={data.milestone_id}
+                                        onChange={(e) => setData('milestone_id', e.target.value)}
+                                        className="w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 mb-2"
+                                    >
+                                        <option value="" disabled>Select a milestone...</option>
+                                        {selectedOrder.milestones.map((m) => {
+                                            const isLocked = !['in_progress', 'revision'].includes(m.status);
+                                            return (
+                                                <option key={m.id} value={m.id} disabled={isLocked}>
+                                                    {m.sort_order}. {m.name} ({m.weight}%) - {m.status.replace('_', ' ').toUpperCase()} {isLocked ? '(Locked/Done)' : ''}
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+
+                                    {data.milestone_id && (() => {
+                                        const active = selectedOrder.milestones.find(m => m.id == data.milestone_id);
+                                        return active ? (
+                                            <div className="text-xs text-indigo-700 mt-2 bg-white/50 p-2 rounded">
+                                                <strong>Requirements:</strong> {active.description || 'No specific requirements.'}
+                                            </div>
+                                        ) : null;
+                                    })()}
+                                    {errors.milestone_id && <div className="text-red-500 text-sm mt-1">{errors.milestone_id}</div>}
+                                </div>
+                            )
                         )}
 
                         {/* Link Input - Hide for milestone if not needed, or keep optional */}
@@ -619,8 +644,10 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                         <div className="flex justify-end gap-3 space-x-3">
                             <SecondaryButton onClick={closeUploadModal}>Cancel</SecondaryButton>
-                            <PrimaryButton disabled={processing} className="bg-indigo-600">
-                                {uploadType === 'milestone' ? 'Submit Milestone' : 'Submit Deliverables'}
+                            <PrimaryButton disabled={processing} className={selectedOrder.status === 'revision' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600'}>
+                                {uploadType === 'milestone'
+                                    ? (selectedOrder.status === 'revision' ? 'Submit Revision' : 'Submit Milestone')
+                                    : 'Submit Deliverables'}
                             </PrimaryButton>
                         </div>
                     </form>

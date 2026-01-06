@@ -24,21 +24,21 @@ class ServiceSeeder extends Seeder
                 'price' => 500000, // Example price
                 'description' => 'Cocok untuk landing page atau web sederhana',
                 'duration_days' => 3,
-                'features' => json_encode([
+                'features' => [
                     'Website statis / dinamis sederhana',
                     'CRUD sederhana',
                     'Auth login/register',
                     'Database MySQL',
                     'UI basic (Bootstrap/Tailwind)',
                     'Max 5 halaman'
-                ]),
+                ],
             ],
             [
                 'name' => 'Paket Menengah',
                 'price' => 1500000,
                 'description' => 'Untuk aplikasi web dengan fitur lengkap',
                 'duration_days' => 7,
-                'features' => json_encode([
+                'features' => [
                     'Full CRUD kompleks',
                     'Role & permission',
                     'Dashboard admin',
@@ -46,33 +46,33 @@ class ServiceSeeder extends Seeder
                     'Upload file & media',
                     'Validasi data',
                     'Max 10 halaman'
-                ]),
+                ],
             ],
             [
                 'name' => 'Paket Atas',
                 'price' => 3000000,
                 'description' => 'Sistem kompleks skala besar',
                 'duration_days' => 15,
-                'features' => json_encode([
+                'features' => [
                     'Sistem multi-role & multi-level',
                     'REST API / Backend service',
                     'Payment gateway',
                     'Optimasi performa',
                     'Security hardening',
                     'Deployment & dokumentasi'
-                ]),
+                ],
             ],
             [
                 'name' => 'Paket Pelajar',
                 'price' => 0,
                 'description' => 'Solusi hemat untuk pelajar/mahasiswa',
                 'duration_days' => 3,
-                'features' => json_encode([
+                'features' => [
                     'Harga Negotiable',
                     'Fitur Negotiable',
                     'Konsultasi Gratis',
                     'Waktu Pengerjaan Fleksibel'
-                ]),
+                ],
             ],
         ]);
 
