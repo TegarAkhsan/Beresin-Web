@@ -50,8 +50,44 @@ class Order extends Model
         'additional_payment_status',
         'refund_amount',
         'refund_status',
-        'cancellation_reason'
+        'refund_status',
+        'cancellation_reason',
+        'payout_request_id'
     ];
+
+    protected $appends = ['joki_commission'];
+
+    public function getJokiCommissionAttribute()
+    {
+        // 65% of base, 80% of rush, 100% of revision
+        $base = $this->base_price ?? 0;
+        $rush = $this->rush_fee ?? 0;
+        $revision = $this->additional_revision_fee ?? 0;
+
+        return ($base * 0.65) + ($rush * 0.80) + ($revision * 1.00);
+    }
+
+    public function getAdminCommissionAttribute()
+    {
+        // 20% of base
+        $base = $this->base_price ?? 0;
+        return ($base * 0.20);
+    }
+
+    public function getOperationalCommissionAttribute()
+    {
+        // 15% of base, 20% of rush, 100% of platform/operational fee
+        $base = $this->base_price ?? 0;
+        $rush = $this->rush_fee ?? 0;
+        $platform = $this->platform_fee ?? 0;
+
+        return ($base * 0.15) + ($rush * 0.20) + $platform;
+    }
+
+    public function payoutRequest()
+    {
+        return $this->belongsTo(PayoutRequest::class);
+    }
 
     protected $casts = [
         'started_at' => 'datetime',

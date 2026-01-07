@@ -29,6 +29,9 @@ class User extends Authenticatable
         'university',
         'gender',
         'referral_source',
+        'bank_name',
+        'account_number',
+        'account_holder',
     ];
 
     /**

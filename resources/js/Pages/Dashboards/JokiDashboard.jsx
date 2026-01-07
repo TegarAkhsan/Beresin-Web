@@ -12,7 +12,7 @@ import TasksTab from './Joki/TasksTab';
 import EarningsTab from './Joki/EarningsTab';
 import CompletedTab from './Joki/CompletedTab';
 
-export default function JokiDashboard({ auth, upcomingTasks, activeTasks, reviewTasks, completedTasks = [], stats }) {
+export default function JokiDashboard({ auth, upcomingTasks, activeTasks, reviewTasks, completedTasks = [], stats, financials }) {
     // Tab state management
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -245,7 +245,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                         )}
 
                         {activeTab === 'earnings' && (
-                            <EarningsTab stats={stats} />
+                            <EarningsTab stats={stats} financials={financials} />
                         )}
                     </div>
                 </main>
@@ -276,7 +276,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                 </div>
                                 <div className="text-right">
                                     <span className="block text-2xl font-bold text-emerald-600">
-                                        Rp {new Intl.NumberFormat('id-ID').format(previewTask.amount)}
+                                        Rp {new Intl.NumberFormat('id-ID').format(previewTask.joki_commission)}
                                     </span>
                                     <span className="text-xs text-gray-400 font-medium">Potential Earnings</span>
                                 </div>
@@ -461,7 +461,7 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
                                             </div>
                                             <div className="text-right">
                                                 <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">Payout</span>
-                                                <span className="font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(detailTask.amount)}</span>
+                                                <span className="font-bold text-gray-800">Rp {new Intl.NumberFormat('id-ID').format(detailTask.joki_commission)}</span>
                                             </div>
                                         </div>
 

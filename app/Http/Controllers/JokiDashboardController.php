@@ -50,10 +50,28 @@ class JokiDashboardController extends Controller
             $workloadStatus = 'Red'; // Overload
         }
 
-        // 3. Earnings (Mocked based on order amount for now)
-        $completedOrders = $completedTasks;
-        $totalEarnings = $completedOrders->sum('amount'); // Assuming 100% for now
-        $heldEarnings = $activeTasks->sum('amount');
+        // 3. Earnings (Using Joki Commission Accessor)
+        $completedOrdersCount = $completedTasks->count();
+
+        // Lifetime Earnings (Net Joki Share)
+        $totalEarnings = $completedTasks->sum(function ($order) {
+            return $order->joki_commission;
+        });
+
+        // Available Balance (Completed and NOT requested yet)
+        $availableOrders = $completedTasks->whereNull('payout_request_id');
+        $availableBalance = $availableOrders->sum(function ($order) {
+            return $order->joki_commission;
+        });
+
+        // Payout History
+        $payoutHistory = \App\Models\PayoutRequest::where('user_id', $user->id)->latest()->get();
+
+        // Pending and Held
+        $heldEarnings = $activeTasks->sum(function ($order) {
+            // Estimate using current commission logic
+            return $order->joki_commission;
+        });
 
         // 4. Performance Metrics
         // Average Rating
@@ -62,8 +80,8 @@ class JokiDashboardController extends Controller
         })->avg('rating') ?? 0;
 
         // On-time Rate
-        $totalCompleted = $completedOrders->count();
-        $onTimeCount = $completedOrders->filter(function ($order) {
+        $totalCompleted = $completedTasks->count();
+        $onTimeCount = $completedTasks->filter(function ($order) {
             return $order->completed_at && $order->completed_at <= $order->deadline;
         })->count();
         $onTimeRate = $totalCompleted > 0 ? round(($onTimeCount / $totalCompleted) * 100) : 0;
@@ -80,6 +98,16 @@ class JokiDashboardController extends Controller
                 'avg_rating' => number_format($avgRating, 1),
                 'on_time_rate' => $onTimeRate,
                 'total_completed' => $totalCompleted
+            ],
+            'financials' => [
+                'available_balance' => $availableBalance,
+                'available_orders' => $availableOrders->values(),
+                'payout_history' => $payoutHistory,
+                'bank_details' => [
+                    'bank_name' => $user->bank_name,
+                    'account_number' => $user->account_number,
+                    'account_holder' => $user->account_holder,
+                ]
             ]
         ]);
     }
@@ -250,5 +278,71 @@ class JokiDashboardController extends Controller
         }
 
         return back()->with('message', 'Order finalized and marked as completed!');
+    }
+
+    public function updatePayoutSettings(Request $request)
+    {
+        $request->validate([
+            'bank_name' => 'required|string|max:100',
+            'account_number' => 'required|string|max:50',
+            'account_holder' => 'required|string|max:100',
+        ]);
+
+        $request->user()->update([
+            'bank_name' => $request->bank_name,
+            'account_number' => $request->account_number,
+            'account_holder' => $request->account_holder,
+        ]);
+
+        return back()->with('message', 'Payout settings updated successfully.');
+    }
+
+    public function requestPayout(Request $request)
+    {
+        $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'exists:orders,id',
+        ]);
+
+        $user = $request->user();
+
+        // Validate Bank Details
+        if (!$user->bank_name || !$user->account_number || !$user->account_holder) {
+            return back()->with('error', 'Please complete your payout settings first.');
+        }
+
+        // Fetch valid orders
+        $orders = \App\Models\Order::whereIn('id', $request->order_ids)
+            ->where('joki_id', $user->id)
+            ->where('status', 'completed')
+            ->whereNull('payout_request_id')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return back()->with('error', 'No valid orders selected for payout.');
+        }
+
+        $totalAmount = $orders->sum(function ($order) {
+            return $order->joki_commission;
+        });
+
+        // Create Payout Request
+        $payoutRequest = \App\Models\PayoutRequest::create([
+            'user_id' => $user->id,
+            'amount' => $totalAmount,
+            'status' => 'pending',
+            'bank_details_snapshot' => [
+                'bank_name' => $user->bank_name,
+                'account_number' => $user->account_number,
+                'account_holder' => $user->account_holder,
+            ]
+        ]);
+
+        // Link orders
+        \App\Models\Order::whereIn('id', $orders->pluck('id'))->update([
+            'payout_request_id' => $payoutRequest->id
+        ]);
+
+        return back()->with('message', 'Payout request submitted successfully!');
     }
 }

@@ -30,6 +30,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('/orders/{order}/approve', [App\Http\Controllers\Admin\AdminOrderController::class, 'approvePayment'])->name('orders.approve');
     Route::post('/orders/{order}/approve-additional', [App\Http\Controllers\Admin\AdminOrderController::class, 'approveAdditionalPayment'])->name('orders.approve_additional');
 
+    // Payout Management
+    Route::post('/payouts/{payout}/process', [App\Http\Controllers\Admin\AdminController::class, 'processPayout'])->name('payouts.process');
+    Route::post('/payouts/{payout}/reject', [App\Http\Controllers\Admin\AdminController::class, 'rejectPayout'])->name('payouts.reject');
+
     Route::post('/orders/assign/batch', [App\Http\Controllers\Admin\AdminOrderController::class, 'batchAutoAssign'])->name('orders.batch_auto_assign');
     Route::get('/orders/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'assign'])->name('orders.assign');
     Route::post('/orders/{order}/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'storeAssignment'])->name('orders.store_assignment');
@@ -83,6 +87,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/joki/orders/{order}/milestone', [App\Http\Controllers\JokiDashboardController::class, 'uploadMilestone'])->name('joki.orders.milestone');
     Route::post('/joki/orders/{order}/link', [App\Http\Controllers\JokiDashboardController::class, 'updateLink'])->name('joki.orders.link');
     Route::post('/joki/orders/{order}/finalize', [App\Http\Controllers\JokiDashboardController::class, 'finalizeOrder'])->name('joki.finalize-order');
+    Route::post('/joki/payout/settings', [App\Http\Controllers\JokiDashboardController::class, 'updatePayoutSettings'])->name('joki.payout.settings');
+    Route::post('/joki/payout/request', [App\Http\Controllers\JokiDashboardController::class, 'requestPayout'])->name('joki.payout.request');
 
     // Chat Routes (Customer)
     Route::get('/chat/messages', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
