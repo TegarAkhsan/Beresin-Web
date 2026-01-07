@@ -98,4 +98,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'store'])->name('chat.store');
 });
 
+Route::get('/test-milestones', function () {
+    return \App\Models\MilestoneTemplate::whereHas('service', function ($q) {
+        $q->whereIn('slug', ['ui-ux-design', 'mobile-development']);
+    })->count();
+});
+
 require __DIR__ . '/auth.php';
