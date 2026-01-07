@@ -59,34 +59,51 @@ export default function EarningsTab({ stats, financials }) {
             </header>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Available Earnings */}
-                <div className="p-8 bg-emerald-50 rounded-2xl border border-emerald-100 relative overflow-hidden">
+                <div className="p-6 bg-emerald-50 rounded-2xl border border-emerald-100 relative overflow-hidden">
                     <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
-                            <p className="text-sm text-emerald-700 font-bold uppercase tracking-wider">Available Balance</p>
+                            <p className="text-xs text-emerald-700 font-bold uppercase tracking-wider">Available Balance</p>
                         </div>
-                        <p className="text-4xl font-bold text-emerald-900 tracking-tight">
-                            <span className="text-xl align-top mr-1 font-semibold text-emerald-600">Rp</span>
+                        <p className="text-3xl font-bold text-emerald-900 tracking-tight">
+                            <span className="text-lg align-top mr-1 font-semibold text-emerald-600">Rp</span>
                             {new Intl.NumberFormat('id-ID').format(available_balance || 0)}
                         </p>
                     </div>
                 </div>
 
-                {/* Total Lifetime Earnings */}
-                <div className="p-8 bg-blue-50 rounded-2xl border border-blue-100 relative overflow-hidden">
+                {/* Pending Payouts */}
+                <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 relative overflow-hidden">
                     <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
-                            <p className="text-sm text-blue-700 font-bold uppercase tracking-wider">Total Lifetime Earnings</p>
+                            <p className="text-xs text-amber-700 font-bold uppercase tracking-wider">Pending Payouts</p>
                         </div>
-                        <p className="text-4xl font-bold text-blue-900 tracking-tight">
-                            <span className="text-xl align-top mr-1 font-semibold text-blue-600">Rp</span>
+                        <p className="text-3xl font-bold text-amber-900 tracking-tight">
+                            <span className="text-lg align-top mr-1 font-semibold text-amber-600">Rp</span>
+                            {new Intl.NumberFormat('id-ID').format(financials.pending_balance || 0)}
+                        </p>
+                        <p className="text-xs text-amber-600 mt-2">Held in ongoing tasks</p>
+                    </div>
+                </div>
+
+                {/* Total Lifetime Earnings */}
+                <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            </div>
+                            <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Lifetime Earnings</p>
+                        </div>
+                        <p className="text-3xl font-bold text-blue-900 tracking-tight">
+                            <span className="text-lg align-top mr-1 font-semibold text-blue-600">Rp</span>
                             {new Intl.NumberFormat('id-ID').format(stats.total_earnings)}
                         </p>
                     </div>
@@ -225,8 +242,8 @@ export default function EarningsTab({ stats, financials }) {
                                                 <td className="py-3 font-bold">Rp {new Intl.NumberFormat('id-ID').format(payout.amount)}</td>
                                                 <td className="py-3">
                                                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${payout.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                            payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                'bg-red-100 text-red-700'
+                                                        payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-red-100 text-red-700'
                                                         }`}>
                                                         {payout.status}
                                                     </span>

@@ -101,6 +101,7 @@ class JokiDashboardController extends Controller
             ],
             'financials' => [
                 'available_balance' => $availableBalance,
+                'pending_balance' => $heldEarnings,
                 'available_orders' => $availableOrders->values(),
                 'payout_history' => $payoutHistory,
                 'bank_details' => [

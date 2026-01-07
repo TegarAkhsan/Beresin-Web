@@ -7,9 +7,10 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 
-export default function Dashboard({ auth, stats, joki_workload, payoutRequests = [] }) {
+export default function Dashboard({ auth, stats = {}, joki_workload = [], payoutRequests = [] }) {
     const [processModalOpen, setProcessModalOpen] = useState(false);
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
     const [selectedPayout, setSelectedPayout] = useState(null);
 
     // Process Form
@@ -34,6 +35,11 @@ export default function Dashboard({ auth, stats, joki_workload, payoutRequests =
         setRejectModalOpen(true);
     };
 
+    const openDetailsModal = (payout) => {
+        setSelectedPayout(payout);
+        setDetailsModalOpen(true);
+    };
+
     const handleProcess = (e) => {
         e.preventDefault();
         postProcess(route('admin.payouts.process', selectedPayout.id), {
@@ -54,10 +60,10 @@ export default function Dashboard({ auth, stats, joki_workload, payoutRequests =
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Gross Revenue" value={`Rp ${new Intl.NumberFormat('id-ID').format(stats.revenue_gross)}`} subtitle="Lifetime Total" color="blue" />
-                <StatCard title="Admin Earnings" value={`Rp ${new Intl.NumberFormat('id-ID').format(stats.revenue_admin)}`} subtitle="Net Profit" color="emerald" />
-                <StatCard title="Ops Fund" value={`Rp ${new Intl.NumberFormat('id-ID').format(stats.revenue_ops)}`} subtitle="Operational" color="amber" />
-                <StatCard title="Active Jokis" value={stats.total_jokis} subtitle="Staff Count" color="purple" />
+                <StatCard title="Gross Revenue" value={`Rp ${new Intl.NumberFormat('id-ID').format(stats?.revenue_gross || 0)}`} subtitle="Lifetime Total" color="blue" />
+                <StatCard title="Ops Fund" value={`Rp ${new Intl.NumberFormat('id-ID').format(stats?.revenue_ops || 0)}`} subtitle="Operational" color="amber" />
+                <StatCard title="Active Jokis" value={stats?.total_jokis || 0} subtitle="Staff Count" color="purple" />
+                <StatCard title="Total Orders" value={stats?.total_orders || 0} subtitle="Lifetime" color="emerald" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,8 +105,8 @@ export default function Dashboard({ auth, stats, joki_workload, payoutRequests =
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${payout.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                        payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                            'bg-red-100 text-red-700'
+                                                    payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'
                                                     }`}>
                                                     {payout.status}
                                                 </span>
@@ -108,6 +114,7 @@ export default function Dashboard({ auth, stats, joki_workload, payoutRequests =
                                             <td className="px-6 py-4 text-right">
                                                 {payout.status === 'pending' && (
                                                     <div className="flex gap-2">
+                                                        <button onClick={() => openDetailsModal(payout)} className="text-blue-600 hover:text-blue-800 font-bold text-xs">Details</button>
                                                         <button onClick={() => openProcessModal(payout)} className="text-emerald-600 hover:text-emerald-800 font-bold text-xs">Process</button>
                                                         <button onClick={() => openRejectModal(payout)} className="text-red-400 hover:text-red-600 font-bold text-xs">Reject</button>
                                                     </div>
@@ -201,6 +208,63 @@ export default function Dashboard({ auth, stats, joki_workload, payoutRequests =
                         <PrimaryButton className="bg-red-600 hover:bg-red-700" disabled={rejectProcessing}>Reject Request</PrimaryButton>
                     </div>
                 </form>
+            </Modal>
+
+            {/* DETAILS MODAL */}
+            <Modal show={detailsModalOpen} onClose={() => setDetailsModalOpen(false)} maxWidth="2xl">
+                <div className="p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Payout Request Details</h2>
+
+                    {selectedPayout && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Amount</p>
+                                    <p className="text-2xl font-bold text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(selectedPayout.amount)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Requested By</p>
+                                    <p className="font-bold text-gray-900">{selectedPayout.user?.name}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-700 mb-2">Included Orders</h3>
+                                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
+                                            <tr>
+                                                <th className="px-4 py-2">Order #</th>
+                                                <th className="px-4 py-2">Package</th>
+                                                <th className="px-4 py-2 text-right">Commission</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100">
+                                            {selectedPayout.orders?.map((order) => (
+                                                <tr key={order.id}>
+                                                    <td className="px-4 py-2 font-medium">{order.order_number}</td>
+                                                    <td className="px-4 py-2 text-gray-500">{order.package?.name}</td>
+                                                    <td className="px-4 py-2 text-right font-bold text-gray-700">
+                                                        Rp {new Intl.NumberFormat('id-ID').format(order.joki_commission)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {(!selectedPayout.orders || selectedPayout.orders.length === 0) && (
+                                                <tr>
+                                                    <td colSpan="3" className="px-4 py-4 text-center text-gray-500 italic">No specific orders linked.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end">
+                                <SecondaryButton onClick={() => setDetailsModalOpen(false)}>Close</SecondaryButton>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </Modal>
         </AdminLayout>
     );

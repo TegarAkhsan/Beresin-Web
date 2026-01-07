@@ -20,14 +20,13 @@ class AdminController extends Controller
             'active_orders' => Order::whereIn('status', ['pending_payment', 'pending_assignment', 'in_progress', 'review'])->count(),
             // Basic "Revenue" replaced by breakdown
             'revenue_gross' => $completedOrders->sum('amount'),
-            'revenue_admin' => $completedOrders->sum('admin_commission'),
             'revenue_ops' => $completedOrders->sum('operational_commission'),
 
             'total_jokis' => User::where('role', 'joki')->count(),
         ];
 
         // Payout Requests
-        $payoutRequests = \App\Models\PayoutRequest::with('user')->latest()->get();
+        $payoutRequests = \App\Models\PayoutRequest::with(['user', 'orders.package'])->latest()->get();
 
         // Joki Workload (Active orders per joki)
         $joki_workload = User::where('role', 'joki')
@@ -44,6 +43,70 @@ class AdminController extends Controller
             'stats' => $stats,
             'joki_workload' => $joki_workload,
             'payoutRequests' => $payoutRequests
+        ]);
+    }
+
+    public function earnings()
+    {
+        // 1. Fetch Earnings (Completed Orders)
+        $earnings = Order::where('status', 'completed')
+            ->latest()
+            ->get();
+
+        $totalEarnings = $earnings->sum('admin_commission');
+
+        // 2. Fetch Withdrawals
+        $withdrawals = \App\Models\AdminWithdrawal::latest()->get();
+        $totalWithdrawn = $withdrawals->sum('amount');
+
+        // 3. Calculate Available Balance
+        $availableBalance = $totalEarnings - $totalWithdrawn;
+
+        // 4. Transform Earnings History
+        $earningHistory = $earnings->map(function ($order) {
+            return [
+                'id' => 'earn_' . $order->id,
+                'raw_date' => $order->updated_at,
+                'date' => $order->updated_at->format('d M Y'),
+                'order_number' => $order->order_number,
+                'package' => $order->package->name ?? 'N/A', // Assuming package relation exists
+                'source' => '20% Commission from Base Price',
+                'amount' => $order->admin_commission,
+                'type' => 'income'
+            ];
+        });
+
+        // 5. Transform Withdrawal History
+        $withdrawalHistory = $withdrawals->map(function ($wd) {
+            return [
+                'id' => 'wd_' . $wd->id,
+                'raw_date' => $wd->created_at,
+                'date' => $wd->created_at->format('d M Y'),
+                'order_number' => 'WD-' . str_pad($wd->id, 5, '0', STR_PAD_LEFT),
+                'package' => 'Withdrawal',
+                'source' => ($wd->notes ?? 'Withdrawal') . (
+                    isset($wd->bank_details_snapshot['bank_name'])
+                    ? ' - to ' . $wd->bank_details_snapshot['bank_name'] . ' (' . $wd->bank_details_snapshot['account_number'] . ')'
+                    : ''
+                ),
+                'amount' => -$wd->amount, // Negative for display
+                'type' => 'expense'
+            ];
+        });
+
+        // 6. Merge and Sort
+        $history = $earningHistory->concat($withdrawalHistory)->sortByDesc('raw_date')->values();
+
+        return Inertia::render('Admin/Earnings', [
+            'totalEarnings' => $totalEarnings,
+            'totalWithdrawn' => $totalWithdrawn,
+            'availableBalance' => $availableBalance,
+            'history' => $history,
+            'bank_details' => [
+                'bank_name' => auth()->user()->bank_name,
+                'account_number' => auth()->user()->account_number,
+                'account_holder' => auth()->user()->account_holder,
+            ]
         ]);
     }
 
@@ -81,5 +144,54 @@ class AdminController extends Controller
         $payout->orders()->update(['payout_request_id' => null]);
 
         return back()->with('message', 'Payout request REJECTED. Orders released.');
+    }
+    public function withdraw(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:10000',
+            'notes' => 'nullable|string|max:255'
+        ]);
+
+        // Calculate available balance to prevent overdraw
+        $totalEarnings = Order::where('status', 'completed')->get()->sum('admin_commission');
+        $totalWithdrawn = \App\Models\AdminWithdrawal::sum('amount');
+        $availableBalance = $totalEarnings - $totalWithdrawn;
+
+        if ($request->amount > $availableBalance) {
+            return back()->withErrors(['amount' => 'Insufficient funds. Available: Rp ' . number_format($availableBalance, 0, ',', '.')]);
+        }
+
+        $user = auth()->user();
+        $bankDetailsSnapshot = [
+            'bank_name' => $user->bank_name,
+            'account_number' => $user->account_number,
+            'account_holder' => $user->account_holder,
+        ];
+
+        \App\Models\AdminWithdrawal::create([
+            'amount' => $request->amount,
+            'notes' => $request->notes,
+            'bank_details_snapshot' => $bankDetailsSnapshot,
+        ]);
+
+        return back()->with('success', 'Withdrawal recorded successfully.');
+    }
+
+    public function updatePayoutSettings(Request $request)
+    {
+        $request->validate([
+            'bank_name' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'account_holder' => 'required|string|max:255',
+        ]);
+
+        $user = auth()->user();
+        $user->update([
+            'bank_name' => $request->bank_name,
+            'account_number' => $request->account_number,
+            'account_holder' => $request->account_holder,
+        ]);
+
+        return back()->with('success', 'Bank details updated successfully.');
     }
 }

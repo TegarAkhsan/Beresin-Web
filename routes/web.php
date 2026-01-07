@@ -22,6 +22,9 @@ Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'inde
 // Admin Routes
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('dashboard');
+    Route::get('/earnings', [App\Http\Controllers\Admin\AdminController::class, 'earnings'])->name('earnings');
+    Route::post('/earnings/withdraw', [App\Http\Controllers\Admin\AdminController::class, 'withdraw'])->name('earnings.withdraw');
+    Route::post('/earnings/settings', [App\Http\Controllers\Admin\AdminController::class, 'updatePayoutSettings'])->name('earnings.settings');
     Route::post('/users/{user}/blacklist', [App\Http\Controllers\Admin\UserController::class, 'toggleBlacklist'])->name('users.blacklist');
     Route::resource('users', App\Http\Controllers\Admin\UserController::class);
 

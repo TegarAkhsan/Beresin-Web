@@ -8,6 +8,7 @@ export default function AdminLayout({ user, header, children }) {
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', active: route().current('admin.dashboard') },
+        { name: 'Earnings', href: route('admin.earnings'), active: route().current('admin.earnings') },
         { name: 'Users', href: route('admin.users.index'), active: route().current('admin.users.*') },
         { name: 'Services', href: route('admin.services.index'), active: route().current('admin.services.*') },
         { name: 'Assign Task', href: route('admin.orders.assign'), active: route().current('admin.orders.assign') },
