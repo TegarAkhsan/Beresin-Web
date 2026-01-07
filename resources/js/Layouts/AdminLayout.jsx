@@ -1,10 +1,12 @@
 import Toast from '@/Components/Toast';
 import { usePage, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import NavLink from '@/Components/NavLink';
 import Dropdown from '@/Components/Dropdown';
 
 export default function AdminLayout({ user, header, children }) {
     const { url } = usePage();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', active: route().current('admin.dashboard') },
@@ -21,8 +23,18 @@ export default function AdminLayout({ user, header, children }) {
     return (
         <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-900 flex">
             <Toast />
+
+            {/* Sidebar Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/20 lg:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar - Glassy & Clean */}
-            <aside className="w-72 bg-white border-r border-gray-100 hidden md:flex flex-col h-screen fixed z-30 transition-all duration-300 shadow-[2px_0_20px_rgba(0,0,0,0.02)]">
+            <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-100 flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-[2px_0_20px_rgba(0,0,0,0.02)] ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}>
 
                 <div className="h-20 flex items-center px-8 border-b border-gray-50">
                     <Link href="/admin" className="text-2xl font-bold tracking-tight text-gray-900">
@@ -61,10 +73,18 @@ export default function AdminLayout({ user, header, children }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-72 flex flex-col min-h-screen">
+            <main className="flex-1 lg:ml-72 flex flex-col min-h-screen">
                 {/* Header - Minimalist */}
                 <header className="bg-white/80 backdrop-blur-md sticky top-0 z-20 h-20 flex items-center justify-between px-8 border-b border-gray-100">
                     <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 -ml-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
                         {/* Top Menu Removed as requested */}
                     </div>
 

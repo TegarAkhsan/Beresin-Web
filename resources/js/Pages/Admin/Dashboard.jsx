@@ -75,7 +75,59 @@ export default function Dashboard({ auth, stats = {}, joki_workload = [], payout
                             {payoutRequests.filter(p => p.status === 'pending').length} Pending
                         </span>
                     </div>
-                    <div className="p-0 overflow-x-auto">
+                    {/* Mobile Card View */}
+                    <div className="lg:hidden">
+                        {payoutRequests.length === 0 ? (
+                            <div className="p-6 text-center text-gray-500 text-sm">No payout requests found.</div>
+                        ) : (
+                            <div className="divide-y divide-gray-100">
+                                {payoutRequests.map((payout) => (
+                                    <div key={payout.id} className="p-4 bg-white hover:bg-gray-50 transition">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{payout.user?.name || 'Unknown'}</h4>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    <p className="font-medium">{payout.bank_details_snapshot?.bank_name}</p>
+                                                    <p>{payout.bank_details_snapshot?.account_number}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${payout.status === 'paid' ? 'bg-green-100 text-green-700' :
+                                                    payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-red-100 text-red-700'
+                                                }`}>
+                                                {payout.status}
+                                            </span>
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <p className="text-xl font-bold text-emerald-600">
+                                                Rp {new Intl.NumberFormat('id-ID').format(payout.amount)}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            {payout.status === 'pending' && (
+                                                <>
+                                                    <button onClick={() => openDetailsModal(payout)} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200">Details</button>
+                                                    <button onClick={() => openRejectModal(payout)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Reject</button>
+                                                    <button onClick={() => openProcessModal(payout)} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700">Process</button>
+                                                </>
+                                            )}
+                                            {payout.status === 'paid' && (
+                                                <a href={`/storage/${payout.proof_file}`} target="_blank" className="flex items-center text-indigo-600 hover:text-indigo-800 text-xs font-bold bg-indigo-50 px-3 py-1.5 rounded-lg">
+                                                    <svg className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                    Proof
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden lg:block p-0 overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                                 <tr>
@@ -104,7 +156,7 @@ export default function Dashboard({ auth, stats = {}, joki_workload = [], payout
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${payout.status === 'paid' ? 'bg-green-100 text-green-700' :
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase whitespace-nowrap ${payout.status === 'paid' ? 'bg-green-100 text-green-700' :
                                                     payout.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                                                         'bg-red-100 text-red-700'
                                                     }`}>
@@ -113,7 +165,7 @@ export default function Dashboard({ auth, stats = {}, joki_workload = [], payout
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 {payout.status === 'pending' && (
-                                                    <div className="flex gap-2">
+                                                    <div className="flex gap-2 justify-end">
                                                         <button onClick={() => openDetailsModal(payout)} className="text-blue-600 hover:text-blue-800 font-bold text-xs">Details</button>
                                                         <button onClick={() => openProcessModal(payout)} className="text-emerald-600 hover:text-emerald-800 font-bold text-xs">Process</button>
                                                         <button onClick={() => openRejectModal(payout)} className="text-red-400 hover:text-red-600 font-bold text-xs">Reject</button>

@@ -20,15 +20,15 @@ export default function ChatIndex({ auth, conversations }) {
                                     {conversations.map((user) => (
                                         <div
                                             key={user.id}
-                                            className={`p-4 rounded-lg border flex justify-between items-center transition hover:bg-slate-50 ${user.unread_count > 0 ? 'bg-indigo-50 border-indigo-200' : 'border-gray-200'}`}
+                                            className={`p-4 rounded-lg border flex flex-col md:flex-row md:justify-between md:items-center transition hover:bg-slate-50 gap-4 ${user.unread_count > 0 ? 'bg-indigo-50 border-indigo-200' : 'border-gray-200'}`}
                                         >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-lg">
+                                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                                <div className="w-12 h-12 flex-shrink-0 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold text-lg">
                                                     {user.name.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-gray-800">{user.name}</h3>
-                                                    <p className="text-gray-500 text-sm truncate max-w-md">
+                                                <div className="min-w-0 flex-1">
+                                                    <h3 className="font-bold text-lg text-gray-800 truncate">{user.name}</h3>
+                                                    <p className="text-gray-500 text-sm truncate max-w-xs md:max-w-md">
                                                         {user.last_message?.message}
                                                     </p>
                                                     <span className="text-xs text-gray-400 mt-1 block">
@@ -37,15 +37,15 @@ export default function ChatIndex({ auth, conversations }) {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center justify-end gap-3 w-full md:w-auto">
                                                 {user.unread_count > 0 && (
-                                                    <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                                                    <span className="flex-shrink-0 px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-full whitespace-nowrap shadow-sm">
                                                         {user.unread_count} New
                                                     </span>
                                                 )}
                                                 <button
                                                     onClick={() => window.dispatchEvent(new CustomEvent('open-admin-chat', { detail: { userId: user.id, userName: user.name } }))}
-                                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium whitespace-nowrap shadow-sm transition-colors"
                                                 >
                                                     Open Chat
                                                 </button>

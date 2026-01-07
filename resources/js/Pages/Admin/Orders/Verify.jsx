@@ -45,7 +45,70 @@ export default function Verify({ auth, orders, additionalPaymentOrders }) {
 
             <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6 text-gray-900 dark:text-gray-100">
-                    <div className="overflow-x-auto">
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                        {orders.data.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500 italic">No pending payments found.</div>
+                        ) : (
+                            orders.data.map((order) => (
+                                <div key={order.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <h4 className="font-bold text-gray-900">{order.order_number || `#${order.id}`}</h4>
+                                            <div className="flex items-center gap-1 mt-1">
+                                                <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">
+                                                    {order.package?.service?.name}
+                                                </span>
+                                                {order.is_negotiation && (
+                                                    <span className="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-yellow-200">
+                                                        NEGO
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="font-bold text-gray-900 text-lg">
+                                            Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
+                                        </p>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <p className="text-xs text-gray-500 font-medium">{order.user.name}</p>
+                                        <p className="text-[10px] text-gray-400">{order.user.email}</p>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                                        {order.payment_proof ? (
+                                            <a
+                                                href={'/storage/' + order.payment_proof}
+                                                target="_blank"
+                                                className="flex-1 text-center py-2 bg-blue-50 text-blue-600 rounded-md text-sm font-bold border border-blue-100"
+                                            >
+                                                View Proof
+                                            </a>
+                                        ) : (
+                                            <div className="flex-1 text-center py-2 bg-gray-100 text-gray-400 rounded-md text-sm italic">No Proof</div>
+                                        )}
+                                        <button
+                                            onClick={() => openDetails(order)}
+                                            className="flex-1 py-2 bg-gray-200 text-gray-800 rounded-md text-sm font-bold"
+                                        >
+                                            Details
+                                        </button>
+                                        <button
+                                            onClick={() => confirmApprove(order)}
+                                            className="flex-1 py-2 bg-green-600 text-white rounded-md text-sm font-bold shadow-sm"
+                                        >
+                                            Approve
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
@@ -121,7 +184,53 @@ export default function Verify({ auth, orders, additionalPaymentOrders }) {
                 <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Verifikasi Pembayaran Tambahan (Revisi)</h3>
                 <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div className="p-6 text-gray-900 dark:text-gray-100">
-                        <div className="overflow-x-auto">
+                        {/* Mobile Card View (Additional) */}
+                        <div className="md:hidden space-y-4">
+                            {additionalPaymentOrders && additionalPaymentOrders.length > 0 ? (
+                                additionalPaymentOrders.map((order) => (
+                                    <div key={order.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h4 className="font-bold text-gray-900">{order.order_number || `#${order.id}`}</h4>
+                                            <p className="font-bold text-orange-600">
+                                                Rp {new Intl.NumberFormat('id-ID').format(order.additional_revision_fee)}
+                                            </p>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mb-3">{order.user?.name}</p>
+
+                                        <div className="flex gap-2 pt-3 border-t border-gray-200">
+                                            {order.additional_payment_proof ? (
+                                                <a
+                                                    href={'/storage/' + order.additional_payment_proof}
+                                                    target="_blank"
+                                                    className="flex-1 text-center py-2 bg-blue-50 text-blue-600 rounded-md text-sm font-bold border border-blue-100"
+                                                >
+                                                    View Proof
+                                                </a>
+                                            ) : (
+                                                <div className="flex-1 text-center py-2 bg-gray-100 text-gray-400 rounded-md text-sm italic">No Proof</div>
+                                            )}
+                                            <PrimaryButton
+                                                className="flex-1 justify-center bg-emerald-600 hover:bg-emerald-700"
+                                                onClick={() => {
+                                                    if (confirm('Approve additional payment?')) {
+                                                        post(route('admin.orders.approve_additional', order.id));
+                                                    }
+                                                }}
+                                            >
+                                                Approve
+                                            </PrimaryButton>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-6 text-gray-500 italic text-sm">
+                                    No pending additional revision payments found.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Desktop Table View (Additional) */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>

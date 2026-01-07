@@ -148,7 +148,44 @@ export default function Earnings({ auth, totalEarnings = 0, totalWithdrawn = 0, 
                         {history.length} Transactions
                     </span>
                 </div>
-                <div className="p-0 overflow-x-auto">
+
+                {/* Mobile Transaction Cards */}
+                <div className="lg:hidden">
+                    {history.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500 text-sm">No transactions yet.</div>
+                    ) : (
+                        <div className="divide-y divide-gray-100">
+                            {history.map((item) => (
+                                <div key={item.id} className="p-4 bg-white hover:bg-gray-50 transition">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <p className="text-xs text-gray-500">{item.date}</p>
+                                            <h4 className="font-bold text-gray-900 mt-1">{item.order_number}</h4>
+                                        </div>
+                                        {item.type === 'income' ? (
+                                            <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold uppercase">
+                                                INCOME
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-0.5 rounded text-[10px] bg-amber-50 text-amber-700 border border-amber-100 font-bold uppercase">
+                                                WITHDRAWAL
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between items-end mt-2">
+                                        <p className="text-sm text-gray-500 italic max-w-[60%] truncate">{item.source}</p>
+                                        <p className={`text-right font-bold text-lg ${item.type === 'income' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                            {item.type === 'income' ? '+' : ''} Rp {new Intl.NumberFormat('id-ID').format(item.amount)}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden lg:block p-0 overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
                             <tr>

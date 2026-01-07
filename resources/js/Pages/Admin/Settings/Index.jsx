@@ -42,15 +42,32 @@ export default function SettingsIndex({ auth, settings }) {
                     <div className="flex flex-col md:flex-row gap-6">
                         {/* Sidebar Menu */}
                         <div className="w-full md:w-64 flex-shrink-0">
-                            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                            {/* Mobile: Segmented Control */}
+                            <div className="md:hidden bg-gray-100 p-1 rounded-lg flex mb-6">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-md transition-all text-center ${activeTab === tab.id
+                                            ? 'bg-white text-gray-900 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Desktop: Sidebar Menu */}
+                            <div className="hidden md:block bg-white overflow-hidden shadow-sm sm:rounded-lg">
                                 <div className="p-4 flex flex-col space-y-2">
                                     {tabs.map(tab => (
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id)}
                                             className={`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
-                                                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                                                    : 'text-gray-600 hover:bg-gray-50'
+                                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                                : 'text-gray-600 hover:bg-gray-50'
                                                 }`}
                                         >
                                             {tab.label}

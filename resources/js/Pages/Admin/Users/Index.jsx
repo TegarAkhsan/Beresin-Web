@@ -60,17 +60,17 @@ export default function Index({ auth, users, filters }) {
 
             <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div className="p-6 text-gray-900 dark:text-gray-100">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <Link
                             href={route('admin.users.create')}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                            className="inline-flex justify-center items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition w-full md:w-auto"
                         >
                             Add New User
                         </Link>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full md:w-auto">
                             <TextInput
-                                className="w-64 text-sm"
+                                className="w-full md:w-64 text-sm"
                                 placeholder="Search by name or email..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -79,7 +79,68 @@ export default function Index({ auth, users, filters }) {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* Mobile Card View */}
+                    <div className="lg:hidden space-y-4">
+                        {users.data.map((user) => (
+                            <div key={user.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div>
+                                        <h3 className="font-bold text-gray-900">{user.name}</h3>
+                                        <p className="text-xs text-gray-500">{user.email}</p>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide
+                                        ${user.role === 'admin' ? 'bg-red-100 text-red-800' : ''}
+                                        ${user.role === 'joki' ? 'bg-indigo-100 text-indigo-800' : ''}
+                                        ${user.role === 'customer' ? 'bg-green-100 text-green-800' : ''}
+                                    `}>
+                                        {user.role}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 mb-4">
+                                    {user.is_blacklisted ? (
+                                        <span className="bg-red-900 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                            BLACKLISTED
+                                        </span>
+                                    ) : (
+                                        <span className="bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                            Active
+                                        </span>
+                                    )}
+                                    <span className="text-[10px] text-gray-400">
+                                        Joined: {new Date(user.created_at).toLocaleDateString()}
+                                    </span>
+                                </div>
+
+                                <div className="flex border-t border-gray-50 pt-3 gap-2">
+                                    <Link
+                                        href={route('admin.users.edit', user.id)}
+                                        className="flex-1 py-2 text-center text-xs font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+                                    >
+                                        Edit
+                                    </Link>
+                                    <button
+                                        onClick={() => openBlacklistModal(user)}
+                                        className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition ${user.is_blacklisted
+                                                ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                                                : 'text-slate-700 bg-slate-50 hover:bg-slate-100'
+                                            }`}
+                                    >
+                                        {user.is_blacklisted ? 'Restore' : 'Blacklist'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(user.id)}
+                                        className="flex-1 py-2 text-center text-xs font-bold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>

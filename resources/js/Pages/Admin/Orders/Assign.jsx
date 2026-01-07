@@ -164,7 +164,7 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                                             className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-md text-xs font-bold uppercase tracking-wider transition shadow-sm flex items-center gap-1"
                                             title="Assign all pending orders automatically"
                                         >
-                                            <span>🤖</span> Auto Assign All
+                                            <span className="hidden sm:inline">🤖</span> Auto
                                         </button>
 
                                         <ConfirmationModal
@@ -180,7 +180,39 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        {/* Mobile Card View (Pending) */}
+                        <div className="md:hidden space-y-4">
+                            {orders.data.length === 0 ? (
+                                <div className="text-center py-6 text-gray-500 text-sm">No pending orders.</div>
+                            ) : (
+                                orders.data.map((order) => (
+                                    <div key={order.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{order.order_number || `#${order.id}`}</h4>
+                                                <p className="text-xs text-purple-600 font-semibold mt-0.5">{order.package?.service?.name}</p>
+                                            </div>
+                                            <div className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded">PAID</div>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mb-3">{order.user.name}</p>
+                                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                                            <span className="text-xs text-gray-500">
+                                                Due: <span className="font-medium text-gray-700">{order.deadline ? new Date(order.deadline).toLocaleDateString() : '-'}</span>
+                                            </span>
+                                            <button
+                                                onClick={() => openAssignModal(order, 'manual')}
+                                                className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-bold uppercase tracking-wider"
+                                            >
+                                                Assign
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Desktop Table View (Pending) */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>
@@ -231,7 +263,38 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                             <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                             In Progress / Assigned
                         </h3>
-                        <div className="overflow-x-auto">
+
+                        {/* Mobile Card View (Assigned) */}
+                        <div className="md:hidden space-y-4">
+                            {(!assignedOrders?.data || assignedOrders.data.length === 0) ? (
+                                <div className="text-center py-6 text-gray-500 text-sm">No active tasks found.</div>
+                            ) : (
+                                assignedOrders.data.map((order) => (
+                                    <div key={order.id} className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{order.order_number || `#${order.id}`}</h4>
+                                                <p className="text-xs text-gray-500">{order.package?.service?.name}</p>
+                                            </div>
+                                            <span className={`px-2 py-1 text-xs rounded-full font-semibold
+                                                ${order.status === 'review' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}
+                                            `}>
+                                                {order.status === 'review' ? 'Review' : 'Working'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
+                                                {order.joki?.name.charAt(0)}
+                                            </div>
+                                            <span className="text-sm text-gray-700">{order.joki?.name}</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Desktop Table View (Assigned) */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                     <tr>
