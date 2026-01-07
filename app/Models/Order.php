@@ -46,6 +46,8 @@ class Order extends Model
         'rush_fee',
         'platform_fee',
         'additional_revision_fee',
+        'additional_payment_proof',
+        'additional_payment_status',
         'refund_amount',
         'refund_status',
         'cancellation_reason'

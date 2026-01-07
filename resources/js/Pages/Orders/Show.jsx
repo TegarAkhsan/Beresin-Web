@@ -272,9 +272,9 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                     {/* POST-UPLOAD VIEW: Details Hidden, Confirmation Shown */}
                                     {order.status === 'pending_payment' && order.payment_proof && (
                                         <div className="text-center py-6 animate-fade-in">
-                                            <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-600 shadow-[4px_4px_0px_0px_rgba(22,163,74,1)] mb-6">
-                                                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                                                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                            <div className="bg-amber-50 p-6 rounded-2xl border-2 border-amber-500 shadow-[4px_4px_0px_0px_rgba(245,158,11,1)] mb-6">
+                                                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                                                    <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                                 </div>
                                                 <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Proof Uploaded!</h3>
                                                 <p className="text-gray-600">Waiting for your confirmation to notify Admin.</p>
@@ -321,34 +321,64 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                             {/* COMPLETED / REVIEW / REVISION / IN_PROGRESS */}
                             {order.status !== 'pending_payment' && order.status !== 'waiting_approval' && (
                                 <div className="bg-white rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] p-6 space-y-6">
-                                    {order.status === 'in_progress' ? (
-                                        <div className="bg-blue-50 p-6 rounded-2xl border-2 border-blue-600 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)] text-center">
-                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4 animate-pulse">
-                                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                    {['in_progress', 'review'].includes(order.status) ? (
+                                        <div className={`p-6 rounded-2xl border-2 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] ${order.status === 'review' || (order.milestones && order.milestones.some(m => ['submitted', 'customer_review'].includes(m.status)))
+                                            ? 'bg-purple-50 border-purple-600 shadow-[4px_4px_0px_0px_rgba(147,51,234,1)]'
+                                            : 'bg-blue-50 border-blue-600 shadow-[4px_4px_0px_0px_rgba(37,99,235,1)]'
+                                            }`}>
+                                            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 ${order.status === 'review' || (order.milestones && order.milestones.some(m => ['submitted', 'customer_review'].includes(m.status)))
+                                                ? 'bg-purple-100 text-purple-600'
+                                                : 'bg-blue-100 text-blue-600 animate-pulse'
+                                                }`}>
+                                                {order.status === 'review' || (order.milestones && order.milestones.some(m => ['submitted', 'customer_review'].includes(m.status))) ? (
+                                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                ) : (
+                                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                                                )}
                                             </div>
                                             <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                                {order.milestones && order.milestones.length > 0
-                                                    ? (() => {
-                                                        const current = order.milestones.find(m => m.status === 'in_progress');
-                                                        return current ? `Sedang Mengerjakan: ${current.name}` : "Pengerjaan Dilanjutkan";
-                                                    })()
-                                                    : "Pesanan Sedang Dikerjakan"
+                                                {order.status === 'review'
+                                                    ? "Final Review Required"
+                                                    : (order.milestones && order.milestones.length > 0
+                                                        ? (() => {
+                                                            const submitted = order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
+                                                            if (submitted) return `Review Diperlukan: ${submitted.name}`;
+
+                                                            const current = order.milestones.find(m => m.status === 'in_progress');
+                                                            return current ? `Sedang Mengerjakan: ${current.name}` : "Pengerjaan Dilanjutkan";
+                                                        })()
+                                                        : "Pesanan Sedang Dikerjakan"
+                                                    )
                                                 }
                                             </h3>
                                             <p className="text-gray-600">
-                                                {order.milestones && order.milestones.length > 0
-                                                    ? "Tim kami sedang mengerjakan milestone ini. Harap tunggu update selanjutnya."
-                                                    : "Tim kami sedang memproses pesanan Anda. Harap tunggu notifikasi selanjutnya."
+                                                {order.status === 'review'
+                                                    ? "Seluruh pekerjaan telah selesai. Silakan review hasil akhir dan berikan tanggapan Anda."
+                                                    : (order.milestones && order.milestones.some(m => ['submitted', 'customer_review'].includes(m.status))
+                                                        ? "Joki telah menyelesaikan milestone ini. Silakan review hasilnya di bawah."
+                                                        : (order.milestones && order.milestones.length > 0
+                                                            ? "Tim kami sedang mengerjakan milestone ini. Harap tunggu update selanjutnya."
+                                                            : "Tim kami sedang memproses pesanan Anda. Harap tunggu notifikasi selanjutnya.")
+                                                    )
                                                 }
                                             </p>
                                         </div>
-                                    ) : (
-                                        <div className="bg-green-50 p-6 rounded-2xl border-2 border-green-600 shadow-[4px_4px_0px_0px_rgba(22,163,74,1)] text-center">
-                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                                                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                    ) : order.status === 'completed' ? (
+                                        <div className="bg-emerald-50 p-6 rounded-2xl border-2 border-emerald-600 shadow-[4px_4px_0px_0px_rgba(5,150,105,1)] text-center">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+                                                <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                                             </div>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-2">Payment Verified!</h3>
-                                            <p className="text-gray-600">Your order is being processed by our team.</p>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">Order Completed!</h3>
+                                            <p className="text-gray-600">Terima kasih telah menggunakan jasa kami. Pesanan Anda telah selesai.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-gray-50 p-6 rounded-2xl border-2 border-gray-600 shadow-[4px_4px_0px_0px_rgba(75,85,99,1)] text-center">
+                                            {/* Fallback for other statuses (e.g. refund_requested) */}
+                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
+                                                <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">Status: {order.status.replace('_', ' ').toUpperCase()}</h3>
+                                            <p className="text-gray-600">Pesanan dalam status {order.status}. Hubungi admin jika ada pertanyaan.</p>
                                         </div>
                                     )}
 

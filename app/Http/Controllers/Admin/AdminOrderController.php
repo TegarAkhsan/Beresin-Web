@@ -14,13 +14,18 @@ class AdminOrderController extends Controller
 {
     public function verify()
     {
-        $orders = Order::with(['user', 'package.service', 'package.addons'])
-            ->whereIn('status', ['pending_payment', 'waiting_approval'])
+        $additionalPaymentOrders = Order::with(['user', 'package.service'])
+            ->where('additional_payment_status', 'pending')
             ->latest()
-            ->paginate(10);
+            ->get();
 
         return Inertia::render('Admin/Orders/Verify', [
-            'orders' => $orders,
+            'orders' => Order::with(['user', 'package.service', 'package.addons'])
+                ->whereIn('status', ['pending_payment', 'waiting_approval'])
+                ->latest()
+                ->paginate(10, ['*'], 'orders_page'),
+
+            'additionalPaymentOrders' => $additionalPaymentOrders,
         ]);
     }
 
@@ -33,6 +38,15 @@ class AdminOrderController extends Controller
         ]);
 
         return back()->with('message', 'Payment approved successfully. Order is now ready for assignment.');
+    }
+
+    public function approveAdditionalPayment(Order $order)
+    {
+        $order->update([
+            'additional_payment_status' => 'paid',
+        ]);
+
+        return back()->with('message', 'Additional payment approved successfully.');
     }
 
     public function assign()

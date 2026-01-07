@@ -101,22 +101,22 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                 {activeTab === 'overview' && (
                     <div className="space-y-10 animate-fade-in-up relative z-10">
                         {/* ACTION NEEDED BANNER */}
-                        {orders.some(o => o.status === 'review') && (
+                        {orders.some(o => o.status === 'review' || (o.milestones && o.milestones.some(m => ['submitted', 'customer_review'].includes(m.status)))) && (
                             <div className="bg-purple-100 border-2 border-purple-600 rounded-[2rem] p-6 flex flex-col md:flex-row items-center justify-between shadow-[6px_6px_0px_0px_rgba(147,51,234,1)]">
                                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                                     <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-white font-black text-2xl animate-pulse">
                                         !
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-black text-purple-900">Hasil Pekerjaan Siap Direview!</h3>
-                                        <p className="text-purple-700 font-medium">Joki telah mengupload hasil pekerjaan. Silakan cek dan berikan feedback.</p>
+                                        <h3 className="text-xl font-black text-purple-900">Review Diperlukan!</h3>
+                                        <p className="text-purple-700 font-medium">Ada pekerjaan (Revisi/Milestone) yang menunggu review Anda.</p>
                                     </div>
                                 </div>
                                 <Link
-                                    href={route('orders.review', orders.find(o => o.status === 'review').id)}
+                                    href={route('orders.review', orders.find(o => o.status === 'review' || (o.milestones && o.milestones.some(m => ['submitted', 'customer_review'].includes(m.status)))).id)}
                                     className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl border-2 border-purple-900 hover:bg-purple-700 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)]"
                                 >
-                                    Review Hasil Sekarang &rarr;
+                                    Review Sekarang &rarr;
                                 </Link>
                             </div>
                         )}

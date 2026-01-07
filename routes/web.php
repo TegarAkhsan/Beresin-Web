@@ -28,6 +28,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // Order Management
     Route::get('/orders/verify', [App\Http\Controllers\Admin\AdminOrderController::class, 'verify'])->name('orders.verify');
     Route::post('/orders/{order}/approve', [App\Http\Controllers\Admin\AdminOrderController::class, 'approvePayment'])->name('orders.approve');
+    Route::post('/orders/{order}/approve-additional', [App\Http\Controllers\Admin\AdminOrderController::class, 'approveAdditionalPayment'])->name('orders.approve_additional');
 
     Route::post('/orders/assign/batch', [App\Http\Controllers\Admin\AdminOrderController::class, 'batchAutoAssign'])->name('orders.batch_auto_assign');
     Route::get('/orders/assign', [App\Http\Controllers\Admin\AdminOrderController::class, 'assign'])->name('orders.assign');
@@ -70,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/accept', [App\Http\Controllers\OrderController::class, 'acceptResult'])->name('orders.accept');
     Route::post('/orders/{order}/revision', [App\Http\Controllers\OrderController::class, 'requestRevision'])->name('orders.revision');
     Route::post('/orders/{order}/refund', [App\Http\Controllers\OrderController::class, 'requestRefund'])->name('orders.refund');
+    Route::post('/orders/{order}/additional-payment', [App\Http\Controllers\OrderController::class, 'uploadAdditionalPayment'])->name('orders.additional-payment');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

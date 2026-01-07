@@ -155,27 +155,52 @@ class JokiDashboardController extends Controller
 
         $request->validate([
             'milestone_id' => 'required|exists:order_milestones,id',
-            'file' => 'required|file|max:10240', // 10MB
-            'note' => 'nullable|string'
+            'file' => 'required_without:external_link|file|max:10240', // 10MB, required if no link
+            'external_link' => 'required_without:file|nullable|url',
+            'note' => 'nullable|string',
+            'version_label' => 'nullable|string|max:50'
         ]);
 
         $milestone = $order->milestones()->findOrFail($request->milestone_id);
 
-        if ($milestone->status !== 'in_progress' && $milestone->status !== 'revision') {
+        // Allow upload if milestone is active OR if the order is in revision mode and milestone is the one under review
+        $isRevisionMode = $order->status === 'revision' && in_array($milestone->status, ['submitted', 'customer_review']);
+
+        if ($milestone->status !== 'in_progress' && $milestone->status !== 'revision' && !$isRevisionMode) {
             return back()->withErrors(['milestone_id' => 'This milestone is not active.']);
         }
 
-        $path = $request->file('file')->store('milestone_proofs', 'public');
+        $path = $request->hasFile('file') ? $request->file('file')->store('milestone_proofs', 'public') : $milestone->file_path;
 
         $milestone->update([
             'status' => 'submitted',
             'file_path' => $path,
+            'submitted_link' => $request->external_link,
+            'version_label' => $request->version_label,
             'joki_notes' => $request->note,
             'submitted_at' => now()
         ]);
 
-        // Update Order to Review status to notify Admin
-        $order->update(['status' => 'review']);
+        // Create OrderFile for history tracking if file exists
+        if ($request->hasFile('file')) {
+            \App\Models\OrderFile::create([
+                'order_id' => $order->id,
+                'file_path' => $path,
+                'version_label' => $request->version_label ?? 'V1',
+                'note' => $request->note
+            ]);
+        }
+
+        // Check if there are next milestones
+        $nextMilestone = $order->milestones()->where('sort_order', '>', $milestone->sort_order)->exists();
+
+        if (!$nextMilestone) {
+            // Only update Order to Review status if this is the Last Milestone
+            $order->update(['status' => 'review']);
+        } else {
+            // Ensure order is in_progress (in case it was in revision)
+            $order->update(['status' => 'in_progress']);
+        }
 
         return back()->with('message', 'Milestone submitted for review.');
     }

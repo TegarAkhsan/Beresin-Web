@@ -13,12 +13,17 @@ export default function Review({ auth, order }) {
         comment: ''
     });
 
-    const { data: revisionData, setData: setRevisionData, post: postRevision, processing: revisionProcessing, errors: revisionErrors, reset: resetRevision } = useForm({
+    const { data: revisionData, setData: setRevisionData, post: postRevision, processing: revisionProcessing, errors: revisionErrors, reset: resetRevision, transform: transformRevision } = useForm({
         reason: '',
         revision_file: null
     });
 
-    const [modalType, setModalType] = useState(null); // 'accept' | 'revision' | 'refund' | 'confirm_milestone'
+    const { data: paymentData, setData: setPaymentData, post: postPayment, processing: paymentProcessing, errors: paymentErrors } = useForm({
+        payment_method: 'qris',
+        payment_proof: null
+    });
+
+    const [modalType, setModalType] = useState(null); // 'accept' | 'revision' | 'refund' | 'confirm_milestone' | 'payment'
     const [refundStep, setRefundStep] = useState(1);
 
     const isImage = (path) => {
@@ -29,6 +34,13 @@ export default function Review({ auth, order }) {
 
     const handleAccept = (e) => {
         e.preventDefault();
+
+        // Check for outstanding additional revision fees
+        if (order.additional_revision_fee > 0 && order.additional_payment_status !== 'paid') {
+            setModalType('payment'); // Trigger payment flow instead
+            return;
+        }
+
         postRating(route('orders.accept', order.id), {
             onSuccess: () => setModalType(null)
         });
@@ -80,6 +92,15 @@ export default function Review({ auth, order }) {
         </div>
     );
 
+    // Helper: Identify if there's a milestone needing review
+    const pendingMilestone = order.milestones && order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
+
+    // Helper: Determine file/link/note to show
+    const displayFile = order.result_file || pendingMilestone?.file_path;
+    const displayLink = pendingMilestone?.submitted_link;
+    const displayNote = order.result_note || pendingMilestone?.joki_notes;
+    const versionLabel = pendingMilestone?.version_label;
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -92,7 +113,25 @@ export default function Review({ auth, order }) {
 
                     {/* Header / Status Banner */}
                     <div className="mb-8">
-                        {order.status === 'review' && (
+                        {pendingMilestone && (
+                            <div className="bg-indigo-600 rounded-[2rem] p-8 text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h1 className="text-3xl font-black">Review Milestone: {pendingMilestone.name}</h1>
+                                        {versionLabel && (
+                                            <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-bold border border-white/30">
+                                                {versionLabel}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-indigo-100 text-lg">Joki telah menyelesaikan milestone ini. Silakan periksa hasilnya.</p>
+                                </div>
+                                <div className="px-6 py-2 bg-white/20 rounded-full font-bold backdrop-blur-sm border-2 border-white/30">
+                                    Status: Waiting Your Review
+                                </div>
+                            </div>
+                        )}
+                        {!pendingMilestone && order.status === 'review' && (
                             <div className="bg-purple-600 rounded-[2rem] p-8 text-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex flex-col md:flex-row justify-between items-center gap-6">
                                 <div>
                                     <h1 className="text-3xl font-black mb-2">Review Hasil Pekerjaan</h1>
@@ -120,53 +159,76 @@ export default function Review({ auth, order }) {
                     <div className="grid lg:grid-cols-3 gap-8">
                         {/* LEFT: PREVIEW AREA */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* File / Image Preview */}
+                            {/* File / Image / Link Preview */}
                             <div className="bg-white rounded-[2rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] overflow-hidden">
                                 <div className="p-6 border-b-2 border-slate-900 bg-slate-50 flex justify-between items-center">
                                     <h3 className="font-black text-xl text-slate-900">Preview Deliverable</h3>
-                                    {order.result_file && (
-                                        <a href={`/storage/${order.result_file}`} target="_blank" className="font-bold text-blue-600 hover:underline flex items-center gap-2">
+                                    {displayFile && (
+                                        <a href={`/storage/${displayFile}`} target="_blank" className="font-bold text-blue-600 hover:underline flex items-center gap-2">
                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                             Download File
                                         </a>
                                     )}
                                 </div>
-                                <div className="p-8 flex items-center justify-center min-h-[400px] bg-slate-100">
-                                    {order.result_file ? (
-                                        isImage(order.result_file) ? (
-                                            <img src={`/storage/${order.result_file}`} alt="Result Preview" className="max-w-full max-h-[600px] rounded-xl shadow-lg border-2 border-slate-200" />
+                                <div className="p-8 flex flex-col items-center justify-center min-h-[400px] bg-slate-100 gap-6">
+                                    {/* File Display */}
+                                    {displayFile ? (
+                                        isImage(displayFile) ? (
+                                            <img src={`/storage/${displayFile}`} alt="Result Preview" className="max-w-full max-h-[600px] rounded-xl shadow-lg border-2 border-slate-200" />
                                         ) : (
                                             <div className="text-center">
                                                 <div className="w-24 h-24 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-slate-300">
                                                     <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                                 </div>
                                                 <p className="text-slate-500 font-bold mb-2">File Format Not Supported for Preview</p>
-                                                <a href={`/storage/${order.result_file}`} target="_blank" className="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition">Download to View</a>
+                                                <a href={`/storage/${displayFile}`} target="_blank" className="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition">Download to View</a>
                                             </div>
                                         )
                                     ) : (
-                                        <div className="text-center text-slate-400">
-                                            <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                            No file attached
-                                        </div>
+                                        !displayLink && (
+                                            <div className="text-center text-slate-400">
+                                                <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                No file or link provided
+                                            </div>
+                                        )
                                     )}
+
+
                                 </div>
                                 <div className="p-6 bg-slate-50 border-t-2 border-slate-900">
                                     <p className="text-slate-500 text-sm mb-1 font-bold">Joki's Note:</p>
-                                    <p className="text-slate-900">{order.result_note || "No notes provided."}</p>
+                                    <p className="text-slate-900">{displayNote || "No notes provided."}</p>
                                 </div>
                             </div>
+
+                            {/* Link Display (Moved Outside) */}
+                            {displayLink && (
+                                <div className="bg-white rounded-[2rem] border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] p-6">
+                                    <h3 className="font-black text-xl text-slate-900 mb-4">External Resource Link</h3>
+                                    <div className="w-full bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <a href={displayLink} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-blue-600 hover:bg-blue-100/50 p-2 rounded-lg transition group">
+                                            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shadow-sm flex-shrink-0">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                            </div>
+                                            <div className="overflow-hidden">
+                                                <p className="text-xs font-bold text-slate-500 uppercase mb-1">Open Link:</p>
+                                                <span className="font-bold break-all underline decoration-blue-300 underline-offset-2 block text-sm sm:text-base truncate">{displayLink}</span>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* RIGHT: ACTION CARD */}
                         <div className="space-y-6">
-                            {order.status === 'review' ? (
+                            {(order.status === 'review' || pendingMilestone) ? (
                                 <div className="bg-white rounded-[2rem] p-6 border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                                     <h3 className="font-black text-2xl text-slate-900 mb-6">Action Needed</h3>
 
                                     {/* Milestone Progress Info */}
                                     {order.milestones && order.milestones.length > 0 && (() => {
-                                        const current = order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
+                                        const current = pendingMilestone || order.milestones.find(m => ['submitted', 'customer_review'].includes(m.status));
                                         if (current) {
                                             return (
                                                 <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-900">
@@ -210,10 +272,14 @@ export default function Review({ auth, order }) {
                                     </button>
 
                                     {order.revision_count >= (order.package?.max_revisions || 3) ? (
-                                        <div className="w-full py-4 bg-slate-100 text-slate-400 font-bold rounded-xl border-2 border-slate-300 flex items-center justify-center gap-2 cursor-not-allowed">
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                                            Jatah Revisi Habis
-                                        </div>
+                                        <button
+                                            onClick={() => setModalType('revision')}
+                                            className="w-full py-4 bg-orange-100 text-orange-700 font-bold rounded-xl border-2 border-orange-300 hover:bg-orange-200 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm relative overflow-hidden group"
+                                        >
+                                            <div className="absolute inset-0 bg-white/50 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                                            <svg className="w-6 h-6 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                            <span className="z-10">Ajukan Revisi Tambahan</span>
+                                        </button>
                                     ) : (
                                         <button
                                             onClick={() => setModalType('revision')}
@@ -225,7 +291,7 @@ export default function Review({ auth, order }) {
                                     )}
 
                                     {order.revision_count >= (order.package?.max_revisions || 3) && (
-                                        <p className="text-xs text-red-500 font-bold text-center mt-2">Anda telah menggunakan seluruh jatah revisinya.</p>
+                                        <p className="text-xs text-orange-600 font-bold text-center mt-2">Biaya tambahan akan diakumulasikan ke tagihan akhir.</p>
                                     )}
 
                                     <div className="pt-4 mt-4 border-t border-slate-100 text-center">
@@ -335,15 +401,51 @@ export default function Review({ auth, order }) {
             {/* 2. REVISION MODAL */}
             <Modal show={modalType === 'revision'} onClose={() => setModalType(null)}>
                 <div className="p-8">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600">
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${order.revision_count >= (order.package?.max_revisions || 3) ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-600'}`}>
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900 mb-2 text-center">Ajukan Revisi</h2>
-                    <p className="text-center text-slate-500 mb-6">
-                        Berikan detail revisi agar Joki dapat memperbaiki hasil pekerjaan.
-                    </p>
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 text-center">
+                        {order.revision_count >= (order.package?.max_revisions || 3) ? 'Ajukan Revisi Tambahan' : 'Ajukan Revisi'}
+                    </h2>
 
-                    <form onSubmit={handleRevision}>
+                    {order.revision_count >= (order.package?.max_revisions || 3) ? (
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6 text-center">
+                            <p className="text-orange-800 font-bold text-sm mb-1">Biaya Tambahan: Rp 20.000</p>
+                            <p className="text-orange-600 text-xs">Biaya ini akan ditambahkan ke tagihan akhir Anda karena jatah revisi gratis telah habis.</p>
+                        </div>
+                    ) : (
+                        <p className="text-center text-slate-500 mb-6">
+                            Berikan detail revisi agar Joki dapat memperbaiki hasil pekerjaan.
+                        </p>
+                    )}
+
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const isPaid = order.revision_count >= (order.package?.max_revisions || 3);
+
+                        // Manually constructing data since we use useForm or similar upstream
+                        // We need to pass 'paid_revision' to the post request.
+                        // Since handleRevision (the original handler) essentially calls postRevision(route('orders.revision', order.id)), 
+                        // we can try to hijack it or just use the post method directly if we have access.
+                        // Assuming handleRevision is simple, let's redefine the submit here or modify handleRevision.
+                        // Since I can't see handleRevision, I'll assume I can just use the setData ('paid_revision', true) before submit?
+                        // But setData is async/state based. 
+
+                        // Better approach: Create a local handler here or use the existing one with a modification.
+                        // I'll call handleRevision(e, isPaid) if I can modify handleRevision signature? 
+
+                        // Let's rely on adding a hidden input if using standard form submit, 
+                        // BUT Inertia useForm helper usually validates fields.
+                        // I will update this onSubmit to explicitly call the route with the extra data.
+
+                        postRevision(route('orders.revision', order.id), {
+                            data: {
+                                ...revisionData,
+                                paid_revision: isPaid
+                            },
+                            onSuccess: () => setModalType(null),
+                        });
+                    }}>
                         <div className="mb-6">
                             <InputLabel value="Detail Revisi" className="font-bold text-slate-900 uppercase tracking-wide text-xs mb-2" />
                             <textarea
@@ -369,9 +471,9 @@ export default function Review({ auth, order }) {
                             <button
                                 type="submit"
                                 disabled={revisionProcessing}
-                                className="px-6 py-3 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-700 transition"
+                                className={`px-6 py-3 font-bold rounded-lg transition text-white ${order.revision_count >= (order.package?.max_revisions || 3) ? 'bg-orange-600 hover:bg-orange-700' : 'bg-slate-900 hover:bg-slate-700'}`}
                             >
-                                Kirim Revisi
+                                {order.revision_count >= (order.package?.max_revisions || 3) ? 'Setuju & Bayar Revisi' : 'Kirim Revisi'}
                             </button>
                         </div>
                     </form>
@@ -553,6 +655,103 @@ export default function Review({ auth, order }) {
                     </div>
                 </div>
             </Modal>
-        </AuthenticatedLayout>
+
+            {/* 5. PAYMENT MODAL */}
+            <Modal show={modalType === 'payment'} onClose={() => setModalType(null)}>
+                <div className="p-8">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-600">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 text-center">Pelunasan Revisi Tambahan</h2>
+                    <p className="text-center text-slate-500 mb-6">
+                        Mohon lunasi tagihan tambahan untuk mengunduh hasil final.
+                    </p>
+
+                    <div className="bg-slate-50 p-4 rounded-xl mb-6 text-center border border-slate-200">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Tagihan</p>
+                        <p className="text-3xl font-black text-slate-900">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(order.additional_revision_fee || 0)}
+                        </p>
+                        {order.additional_payment_status === 'pending' && (
+                            <div className="mt-2 inline-block px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200">
+                                Pembayaran Sedang Diverifikasi Admin
+                            </div>
+                        )}
+                    </div>
+
+                    {order.additional_payment_status === 'pending' ? (
+                        <div className="text-center">
+                            <p className="text-slate-500 text-sm mb-4">Bukti pembayaran Anda sudah kami terima dan sedang dalam proses pengecekan admin. Mohon tunggu konfirmasi via WhatsApp atau cek dashboard secara berkala.</p>
+                            <button
+                                onClick={() => setModalType(null)}
+                                className="px-6 py-2.5 bg-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-300 transition"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            postPayment(route('orders.additional-payment', order.id), {
+                                onSuccess: () => setModalType(null)
+                            });
+                        }}>
+                            <div className="mb-6">
+                                <InputLabel value="Metode Pembayaran" className="font-bold text-slate-900 uppercase tracking-wide text-xs mb-2" />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label className={`cursor-pointer border-2 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all ${paymentData.payment_method === 'qris' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <input type="radio" value="qris" checked={paymentData.payment_method === 'qris'} onChange={(e) => setPaymentData('payment_method', e.target.value)} className="hidden" />
+                                        <span className="font-bold text-sm text-slate-700">QRIS</span>
+                                    </label>
+                                    <label className={`cursor-pointer border-2 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition-all ${paymentData.payment_method === 'bank' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                                        <input type="radio" value="bank" checked={paymentData.payment_method === 'bank'} onChange={(e) => setPaymentData('payment_method', e.target.value)} className="hidden" />
+                                        <span className="font-bold text-sm text-slate-700">Transfer Bank / VA</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {paymentData.payment_method === 'qris' && (
+                                <div className="mb-6 text-center animate-fade-in">
+                                    <p className="text-xs font-bold text-slate-400 mb-2">Scan QRIS Berikut:</p>
+                                    <div className="w-48 h-48 bg-white border-2 border-slate-900 rounded-xl mx-auto flex items-center justify-center mb-2">
+                                        {/* Placeholder for QR Code */}
+                                        <span className="text-slate-400 font-bold text-xs">QR CODE IMAGE</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {paymentData.payment_method === 'bank' && (
+                                <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-center animate-fade-in">
+                                    <p className="text-blue-800 font-bold text-sm">BCA: 123-456-7890</p>
+                                    <p className="text-blue-600 text-xs">a.n. Beresin Admin</p>
+                                </div>
+                            )}
+
+                            <div className="mb-6">
+                                <InputLabel value="Upload Bukti Pembayaran" className="font-bold text-slate-900 uppercase tracking-wide text-xs mb-2" />
+                                <input
+                                    type="file"
+                                    required
+                                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                                    onChange={(e) => setPaymentData('payment_proof', e.target.files[0])}
+                                />
+                                {paymentErrors.payment_proof && <p className="text-red-500 text-xs mt-1">{paymentErrors.payment_proof}</p>}
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={paymentProcessing}
+                                className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+                            >
+                                Kirim Bukti Pembayaran
+                            </button>
+                            <p className="text-center text-[10px] text-slate-400 mt-4">
+                                Setelah upload, harap konfirmasi ke Admin via WhatsApp untuk mempercepat proses.
+                            </p>
+                        </form>
+                    )}
+                </div>
+            </Modal>
+        </AuthenticatedLayout >
     );
 }

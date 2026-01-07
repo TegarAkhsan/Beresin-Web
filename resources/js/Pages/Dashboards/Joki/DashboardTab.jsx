@@ -115,13 +115,20 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                                 const total = task.milestones.length;
                                 const completed = task.milestones.filter(m => ['submitted', 'customer_review', 'completed'].includes(m.status)).length;
                                 const current = task.milestones.find(m => ['in_progress', 'revision'].includes(m.status));
+                                const submitted = task.milestones.find(m => ['submitted', 'customer_review'].includes(m.status)); // Check for submitted but not completed
                                 const progress = Math.round((completed / total) * 100);
 
                                 return (
                                     <div>
                                         <div className="flex justify-end items-center gap-2 mb-1">
                                             <span className="text-xs font-bold text-gray-500 uppercase">
-                                                {current ? `Current: ${current.name}` : (progress === 100 ? 'All Done' : 'Pending Start')}
+                                                {current
+                                                    ? `Current: ${current.name}`
+                                                    : (submitted
+                                                        ? `In Review: ${submitted.name}`
+                                                        : (progress === 100 ? 'All Done' : 'Pending Start')
+                                                    )
+                                                }
                                             </span>
                                             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                                                 {progress}%
@@ -130,12 +137,16 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                                         <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
                                             <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
                                         </div>
-                                        {current && (
+                                        {current ? (
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                                     ${current.status === 'revision' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
                                                 {current.status === 'revision' ? 'Needs Revision' : 'Milestone Active'}
                                             </span>
-                                        )}
+                                        ) : submitted ? (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                Waiting for Review
+                                            </span>
+                                        ) : null}
                                     </div>
                                 );
                             })()}

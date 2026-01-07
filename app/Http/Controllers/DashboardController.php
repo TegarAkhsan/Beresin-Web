@@ -14,7 +14,7 @@ class DashboardController extends Controller
         $orders = [];
 
         if ($user->role === 'customer') {
-            $orders = Order::with(['package.service', 'joki', 'review'])
+            $orders = Order::with(['package.service', 'joki', 'review', 'milestones'])
                 ->where('user_id', $user->id)
                 ->latest()
                 ->get(); // Keeping get() for now to avoid breaking UI that expects array

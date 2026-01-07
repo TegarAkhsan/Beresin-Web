@@ -179,7 +179,10 @@ class OrderController extends Controller
             abort(403);
         }
 
-        if (!in_array($order->status, ['review', 'completed', 'revision']) && !$order->result_file) {
+        // Check for active milestones requiring review
+        $hasPendingMilestoneReview = $order->milestones()->whereIn('status', ['submitted', 'customer_review'])->exists();
+
+        if (!in_array($order->status, ['review', 'completed', 'revision']) && !$order->result_file && !$hasPendingMilestoneReview) {
             return redirect()->route('orders.show', $order);
         }
 
@@ -342,7 +345,11 @@ class OrderController extends Controller
         $order->load('package');
 
         if ($order->revision_count >= $order->package->max_revisions) {
-            return back()->with('error', 'Anda telah menggunakan seluruh jatah revisinya.');
+            if (!$request->boolean('paid_revision')) {
+                return back()->with('error', 'Anda telah menggunakan seluruh jatah revisinya.');
+            }
+            // Add fee for additional revision
+            $order->increment('additional_revision_fee', 20000);
         }
 
         $request->validate([
@@ -361,6 +368,18 @@ class OrderController extends Controller
             'revision_file' => $path,
             'revision_count' => $order->revision_count + 1
         ]);
+
+        // Also update the latest submitted milestone to revision status
+        if ($order->milestones()->exists()) {
+            $latestMilestone = $order->milestones()
+                ->whereIn('status', ['submitted', 'customer_review'])
+                ->orderBy('sort_order', 'desc')
+                ->first();
+
+            if ($latestMilestone) {
+                $latestMilestone->update(['status' => 'revision']);
+            }
+        }
 
         return back()->with('message', 'Revision requested. The Joki has been notified.');
     }
@@ -386,5 +405,27 @@ class OrderController extends Controller
         ]);
 
         return back()->with('message', 'Permintaan refund telah dikirim ke Admin untuk verifikasi.');
+    }
+
+    public function uploadAdditionalPayment(Request $request, Order $order)
+    {
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+
+        $path = $request->file('payment_proof')->store('additional_payments', 'public');
+
+        $order->update([
+            'additional_payment_proof' => $path,
+            'additional_payment_status' => 'pending',
+        ]);
+
+        // Optional: Send notification to admin (TODO)
+
+        return back()->with('message', 'Bukti pembayaran tambahan berhasil diupload. Mohon tunggu konfirmasi admin.');
     }
 }

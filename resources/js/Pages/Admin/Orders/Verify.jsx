@@ -5,7 +5,7 @@ import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 
-export default function Verify({ auth, orders }) {
+export default function Verify({ auth, orders, additionalPaymentOrders }) {
     const [confirmingApproval, setConfirmingApproval] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const { post, processing } = useForm();
@@ -112,6 +112,70 @@ export default function Verify({ auth, orders }) {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* ADDITIONAL PAYMENTS SECTION */}
+            <div className="mt-8">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 px-1">Verifikasi Pembayaran Tambahan (Revisi)</h3>
+                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="p-6 text-gray-900 dark:text-gray-100">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th className="px-6 py-3">Order ID</th>
+                                        <th className="px-6 py-3">Customer</th>
+                                        <th className="px-6 py-3">Additional Fee</th>
+                                        <th className="px-6 py-3">Proof</th>
+                                        <th className="px-6 py-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {additionalPaymentOrders && additionalPaymentOrders.length > 0 ? (
+                                        additionalPaymentOrders.map((order) => (
+                                            <tr key={order.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50">
+                                                <td className="px-6 py-4 font-medium">{order.order_number || `#${order.id}`}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-gray-900">{order.user?.name}</div>
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-orange-600">
+                                                    Rp {new Intl.NumberFormat('id-ID').format(order.additional_revision_fee)}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    {order.additional_payment_proof ? (
+                                                        <a href={'/storage/' + order.additional_payment_proof} target="_blank" className="text-blue-600 underline hover:text-blue-800">
+                                                            View Proof
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-gray-400 italic">No proof</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <PrimaryButton
+                                                        className="bg-emerald-600 hover:bg-emerald-700 focus:bg-emerald-700 active:bg-emerald-800"
+                                                        onClick={() => {
+                                                            if (confirm('Approve additional payment?')) {
+                                                                post(route('admin.orders.approve_additional', order.id));
+                                                            }
+                                                        }}
+                                                    >
+                                                        Approve
+                                                    </PrimaryButton>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
+                                                No pending additional revision payments found.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

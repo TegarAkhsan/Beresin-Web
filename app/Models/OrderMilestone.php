@@ -18,7 +18,9 @@ class OrderMilestone extends Model
         'admin_approved_at',
         'customer_feedback',
         'completed_at',
-        'sort_order'
+        'submitted_link',
+        'version_label',
+        'sort_order',
     ];
 
     protected $casts = [

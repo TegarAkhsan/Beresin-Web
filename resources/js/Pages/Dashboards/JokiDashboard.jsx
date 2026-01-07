@@ -120,7 +120,16 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         if (order.milestones && order.milestones.length > 0) {
             type = 'milestone';
             // Find active milestone
-            const active = order.milestones.find(m => ['in_progress', 'revision'].includes(m.status));
+            let active = order.milestones.find(m => ['in_progress', 'revision'].includes(m.status));
+
+            // Fallback for Revision Mode if milestone is stuck in 'submitted'
+            if (!active && order.status === 'revision') {
+                // Find the latest submitted milestone to attach revision to
+                active = [...order.milestones]
+                    .reverse()
+                    .find(m => ['submitted', 'customer_review'].includes(m.status));
+            }
+
             if (active) defaultMilestoneId = active.id;
         }
 
@@ -644,9 +653,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
 
                         <div className="flex justify-end gap-3 space-x-3">
                             <SecondaryButton onClick={closeUploadModal}>Cancel</SecondaryButton>
-                            <PrimaryButton disabled={processing} className={selectedOrder.status === 'revision' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600'}>
+                            <PrimaryButton disabled={processing} className={selectedOrder?.status === 'revision' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600'}>
                                 {uploadType === 'milestone'
-                                    ? (selectedOrder.status === 'revision' ? 'Submit Revision' : 'Submit Milestone')
+                                    ? (selectedOrder?.status === 'revision' ? 'Submit Revision' : 'Submit Milestone')
                                     : 'Submit Deliverables'}
                             </PrimaryButton>
                         </div>
