@@ -5,6 +5,7 @@ import Asterisk from '@/Components/Landing/Asterisk';
 export default function CustomerDashboard({ auth, orders, stats }) {
     const user = auth.user;
     const [activeTab, setActiveTab] = useState('overview');
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     // Profile Form
     const { data: profileData, setData: setProfileData, patch: patchProfile, processing: profileProcessing, errors: profileErrors, recentlySuccessful: profileSuccessful } = useForm({
@@ -57,8 +58,17 @@ export default function CustomerDashboard({ auth, orders, stats }) {
     return (
         <div className="min-h-screen flex font-sans selection:bg-yellow-400 selection:text-black bg-[#F3F3F1]">
 
+            {/* Sidebar Overlay */}
+            {isMobileSidebarOpen && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/50 lg:hidden backdrop-blur-sm transition-opacity"
+                    onClick={() => setIsMobileSidebarOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className="w-72 border-r-2 border-slate-900 fixed h-full z-20 flex flex-col p-6 bg-white">
+            <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white border-r-2 border-slate-900 flex flex-col p-6 transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}>
                 <div className="flex items-center space-x-3 mb-10 px-2">
                     <div className="w-10 h-10 bg-yellow-400 rounded-full border-2 border-slate-900 flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
                         <span className="font-black text-xl text-slate-900">B.</span>
@@ -94,23 +104,33 @@ export default function CustomerDashboard({ auth, orders, stats }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 ml-72 p-10 overflow-y-auto relative">
+            <main className="flex-1 lg:ml-72 p-6 lg:p-10 overflow-y-auto relative min-h-screen">
                 {/* Background Decor */}
                 <div className="absolute top-0 right-0 p-10 pointer-events-none opacity-10">
                     <Asterisk className="w-64 h-64 text-slate-900" />
                 </div>
 
-                <header className="flex justify-between items-center mb-12 relative z-10">
-                    <div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+                <header className="flex flex-col md:flex-row md:justify-between md:items-center mb-12 relative z-10 gap-4">
+                    <div className="flex items-center gap-4">
+                        {/* Mobile Toggle */}
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(true)}
+                            className="lg:hidden p-2 -ml-2 text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
+                        >
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                        <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
                             {activeTab === 'overview' && 'Ringkasan'}
                             {activeTab === 'orders' && 'Order Saya'}
                             {activeTab === 'profile' && 'Profil Saya'}
                         </h1>
-                        <p className="text-lg text-slate-500 font-medium">
-                            Selamat datang, <span className="text-slate-900 font-bold underline decoration-yellow-400 underline-offset-4">{user.name}</span>!
-                        </p>
                     </div>
+
+                    <p className="text-lg text-slate-500 font-medium whitespace-nowrap md:whitespace-normal overflow-hidden text-ellipsis md:overflow-visible max-w-full">
+                        Selamat datang, <span className="text-slate-900 font-bold underline decoration-yellow-400 underline-offset-4">{user.name}</span>!
+                    </p>
                 </header>
 
                 {/* NOTIFICATIONS */}
@@ -245,73 +265,146 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                                 </Link>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="uppercase text-sm font-black bg-yellow-400 text-slate-900 border-b-2 border-slate-900">
-                                        <tr>
-                                            <th className="px-8 py-5">ID Order</th>
-                                            <th className="px-8 py-5">Layanan</th>
-                                            <th className="px-8 py-5">Status</th>
-                                            <th className="px-8 py-5">Tagihan</th>
-                                            <th className="px-8 py-5">Invoice</th>
-                                            <th className="px-8 py-5">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y-2 divide-slate-100">
-                                        {orders.map((order) => (
-                                            <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-8 py-5 font-mono font-bold text-slate-900">#{order.order_number}</td>
-                                                <td className="px-8 py-5">
-                                                    <div className="font-bold text-slate-900">{order.package?.service?.name}</div>
-                                                    <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{order.package?.name}</div>
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <span className={`px-3 py-1 text-xs font-black rounded-lg border-2 
-                                                        ${order.status === 'completed' ? 'bg-green-100 text-green-700 border-green-700' :
-                                                            order.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-700' :
-                                                                order.status === 'review' ? 'bg-purple-100 text-purple-700 border-purple-700' :
-                                                                    order.status === 'revision' ? 'bg-orange-100 text-orange-700 border-orange-700' :
-                                                                        order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-700' :
-                                                                            'bg-yellow-100 text-yellow-700 border-yellow-700'}`}>
-                                                        {order.status === 'review' ? 'REVIEW NEEDED' : order.status.replace('_', ' ').toUpperCase()}
+                            <>
+                                {/* Mobile Card View */}
+                                <div className="md:hidden">
+                                    {orders.map((order) => (
+                                        <div key={order.id} className="p-6 border-b-2 border-slate-100 last:border-b-0">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div>
+                                                    <span className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-1">
+                                                        #{order.order_number}
                                                     </span>
-                                                </td>
-                                                <td className="px-8 py-5 font-bold text-slate-900">
-                                                    Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <a href={route('orders.invoice', order.id)} target="_blank" className="inline-flex items-center px-3 py-1 border-2 border-slate-900 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition">
-                                                        PDF
-                                                    </a>
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <div className="flex items-center space-x-3">
-                                                        {order.status === 'review' && (
-                                                            <Link href={route('orders.review', order.id)} className="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded border-2 border-purple-900 hover:bg-purple-700 shadow-[2px_2px_0px_0px_rgba(88,28,135,1)] transition-transform hover:-translate-y-0.5">
-                                                                REVIEW!
-                                                            </Link>
-                                                        )}
-                                                        <Link href={route('orders.show', order.id)} className="font-bold text-xs text-slate-900 underline hover:text-blue-600">
+                                                    <h4 className="font-black text-lg text-slate-900 leading-tight">
+                                                        {order.package?.service?.name}
+                                                    </h4>
+                                                    <p className="text-sm font-bold text-slate-500">
+                                                        {order.package?.name}
+                                                    </p>
+                                                </div>
+                                                <span className={`px-3 py-1 text-[10px] font-black rounded-lg border-2 
+                                                    ${order.status === 'completed' ? 'bg-green-100 text-green-700 border-green-700' :
+                                                        order.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-700' :
+                                                            order.status === 'review' ? 'bg-purple-100 text-purple-700 border-purple-700' :
+                                                                order.status === 'revision' ? 'bg-orange-100 text-orange-700 border-orange-700' :
+                                                                    order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-700' :
+                                                                        'bg-yellow-100 text-yellow-700 border-yellow-700'}`}>
+                                                    {order.status === 'review' ? 'REVIEW NEEDED' : order.status.replace('_', ' ').toUpperCase()}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex justify-between items-end">
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">Total Tagihan</p>
+                                                    <p className="text-xl font-black text-slate-900">
+                                                        Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="flex gap-2">
+                                                        <a href={route('orders.invoice', order.id)} target="_blank" className="p-2 border-2 border-slate-900 rounded-lg text-slate-900 hover:bg-slate-900 hover:text-white transition group">
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                                        </a>
+                                                        <Link href={route('orders.show', order.id)} className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition">
                                                             Detail
                                                         </Link>
-                                                        {order.status === 'pending_payment' && (
-                                                            <Link
-                                                                href={route('orders.cancel', order.id)}
-                                                                method="post"
-                                                                as="button"
-                                                                className="font-bold text-red-600 hover:text-red-800"
-                                                                preserveScroll
-                                                            >
-                                                                Cancel
-                                                            </Link>
-                                                        )}
                                                     </div>
-                                                </td>
+                                                </div>
+                                            </div>
+
+                                            {(order.status === 'review' || order.status === 'pending_payment') && (
+                                                <div className="mt-4 pt-4 border-t-2 border-slate-100 flex gap-2">
+                                                    {order.status === 'review' && (
+                                                        <Link href={route('orders.review', order.id)} className="flex-1 px-4 py-2 bg-purple-600 text-white text-center text-sm font-black rounded-lg border-2 border-purple-900 hover:bg-purple-700 shadow-[2px_2px_0px_0px_rgba(88,28,135,1)] hover:translate-y-px hover:shadow-none transition-all">
+                                                            BERIKAN REVIEW
+                                                        </Link>
+                                                    )}
+                                                    {order.status === 'pending_payment' && (
+                                                        <Link
+                                                            href={route('orders.cancel', order.id)}
+                                                            method="post"
+                                                            as="button"
+                                                            className="flex-1 px-4 py-2 bg-red-50 text-red-600 text-center text-sm font-bold rounded-lg border-2 border-red-100 hover:border-red-600 hover:bg-red-100 transition-colors"
+                                                            preserveScroll
+                                                        >
+                                                            Batalkan Order
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="uppercase text-sm font-black bg-yellow-400 text-slate-900 border-b-2 border-slate-900">
+                                            <tr>
+                                                <th className="px-8 py-5">ID Order</th>
+                                                <th className="px-8 py-5">Layanan</th>
+                                                <th className="px-8 py-5">Status</th>
+                                                <th className="px-8 py-5">Tagihan</th>
+                                                <th className="px-8 py-5">Invoice</th>
+                                                <th className="px-8 py-5">Aksi</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y-2 divide-slate-100">
+                                            {orders.map((order) => (
+                                                <tr key={order.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-8 py-5 font-mono font-bold text-slate-900">#{order.order_number}</td>
+                                                    <td className="px-8 py-5">
+                                                        <div className="font-bold text-slate-900">{order.package?.service?.name}</div>
+                                                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">{order.package?.name}</div>
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <span className={`px-3 py-1 text-xs font-black rounded-lg border-2 whitespace-nowrap
+                                                            ${order.status === 'completed' ? 'bg-green-100 text-green-700 border-green-700' :
+                                                                order.status === 'in_progress' ? 'bg-blue-100 text-blue-700 border-blue-700' :
+                                                                    order.status === 'review' ? 'bg-purple-100 text-purple-700 border-purple-700' :
+                                                                        order.status === 'revision' ? 'bg-orange-100 text-orange-700 border-orange-700' :
+                                                                            order.status === 'cancelled' ? 'bg-red-100 text-red-700 border-red-700' :
+                                                                                'bg-yellow-100 text-yellow-700 border-yellow-700'}`}>
+                                                            {order.status === 'review' ? 'REVIEW NEEDED' : order.status.replace('_', ' ').toUpperCase()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-8 py-5 font-bold text-slate-900">
+                                                        Rp {new Intl.NumberFormat('id-ID').format(order.amount)}
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <a href={route('orders.invoice', order.id)} target="_blank" className="inline-flex items-center px-3 py-1 border-2 border-slate-900 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition">
+                                                            PDF
+                                                        </a>
+                                                    </td>
+                                                    <td className="px-8 py-5">
+                                                        <div className="flex items-center space-x-3">
+                                                            {order.status === 'review' && (
+                                                                <Link href={route('orders.review', order.id)} className="px-3 py-1 bg-purple-600 text-white text-xs font-black rounded border-2 border-purple-900 hover:bg-purple-700 shadow-[2px_2px_0px_0px_rgba(88,28,135,1)] transition-transform hover:-translate-y-0.5">
+                                                                    REVIEW!
+                                                                </Link>
+                                                            )}
+                                                            <Link href={route('orders.show', order.id)} className="font-bold text-xs text-slate-900 underline hover:text-blue-600">
+                                                                Detail
+                                                            </Link>
+                                                            {order.status === 'pending_payment' && (
+                                                                <Link
+                                                                    href={route('orders.cancel', order.id)}
+                                                                    method="post"
+                                                                    as="button"
+                                                                    className="font-bold text-red-600 hover:text-red-800"
+                                                                    preserveScroll
+                                                                >
+                                                                    Cancel
+                                                                </Link>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
