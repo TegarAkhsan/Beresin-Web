@@ -35,12 +35,7 @@ export default function Review({ auth, order }) {
     const handleAccept = (e) => {
         e.preventDefault();
 
-        // Check for outstanding additional revision fees
-        if (order.additional_revision_fee > 0 && order.additional_payment_status !== 'paid') {
-            setModalType('payment'); // Trigger payment flow instead
-            return;
-        }
-
+        // removed checking for payment status, customer can pay later
         postRating(route('orders.accept', order.id), {
             onSuccess: () => setModalType(null)
         });
@@ -438,12 +433,16 @@ export default function Review({ auth, order }) {
                         // BUT Inertia useForm helper usually validates fields.
                         // I will update this onSubmit to explicitly call the route with the extra data.
 
+                        transformRevision((data) => ({
+                            ...data,
+                            paid_revision: isPaid
+                        }));
+
                         postRevision(route('orders.revision', order.id), {
-                            data: {
-                                ...revisionData,
-                                paid_revision: isPaid
+                            onSuccess: () => {
+                                setModalType(null);
+                                resetRevision();
                             },
-                            onSuccess: () => setModalType(null),
                         });
                     }}>
                         <div className="mb-6">

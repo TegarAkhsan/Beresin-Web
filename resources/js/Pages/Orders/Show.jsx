@@ -23,6 +23,10 @@ export default function Show({ auth, order, whatsapp_number, qris_image }) {
         reason: ''
     });
 
+    const { data: extraPayData, setData: setExtraPayData, post: postExtraPay, processing: extraPayProcessing, errors: extraPayErrors, reset: resetExtraPay } = useForm({
+        payment_proof: null
+    });
+
     const [timeLeft, setTimeLeft] = useState(0);
     // Use order.payment_method if available, otherwise default to 'va' (or 'qris' if you prefer)
     const [paymentMethod, setPaymentMethod] = useState(order.payment_method || 'va');
@@ -127,10 +131,12 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                 order.status === 'waiting_approval' ? 'bg-yellow-100 text-yellow-800' :
                                     order.status === 'completed' ? 'bg-green-100 text-green-600' :
                                         order.status === 'review' ? 'bg-purple-100 text-purple-600' :
-                                            order.status === 'revision' ? 'bg-red-100 text-red-600' :
+                                            order.status === 'finalization' ? 'bg-indigo-100 text-indigo-600' :
                                                 'bg-blue-100 text-blue-600'
                                 }`}>
-                                {order.status === 'review' ? 'Waiting Your Review' : order.status.replace('_', ' ')}
+                                {order.status === 'review' ? 'Waiting Your Review' :
+                                    order.status === 'finalization' ? 'Proses Finalisasi oleh Joki' :
+                                        order.status.replace('_', ' ')}
                             </div>
                             {order.status === 'pending_payment' && (
                                 <div className="text-red-500 font-bold flex items-center gap-2">
@@ -387,10 +393,75 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                         <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-200">
                                             <div className="text-center mb-6">
                                                 <h3 className="font-bold text-indigo-900 mb-2 text-lg">Result Available!</h3>
-                                                <p className="text-gray-600 text-sm mb-4">Please download and review your result below.</p>
-                                                <a href={`/storage/${order.result_file}`} target="_blank" className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-full font-bold border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                                                    Download Result 📂
-                                                </a>
+
+                                                {/* Access Control for Additional Revisions */}
+                                                {order.additional_revision_fee > 0 && order.additional_payment_status !== 'paid' ? (
+                                                    <div className="bg-orange-50 border-2 border-orange-400 rounded-xl p-6 text-center shadow-md">
+                                                        <h4 className="text-xl font-bold text-orange-800 mb-2">⚠ Pelunasan Diperlukan</h4>
+                                                        <p className="text-orange-700 mb-4">
+                                                            Tagihan revisi tambahan: <span className="font-black text-lg">Rp {new Intl.NumberFormat('id-ID').format(order.additional_revision_fee)}</span>
+                                                        </p>
+
+                                                        {order.additional_payment_status === 'pending' ? (
+                                                            <div className="bg-white p-4 rounded-lg border border-orange-200">
+                                                                <p className="text-orange-600 font-bold mb-2">✅ Bukti Pembayaran Terkirim</p>
+                                                                <p className="text-sm text-gray-500">Menunggu verifikasi admin. Mohon cek berkala atau hubungi admin untuk percepatan.</p>
+                                                                <button
+                                                                    onClick={() => confirmViaWhatsapp()}
+                                                                    className="mt-3 text-sm font-bold text-green-600 hover:underline"
+                                                                >
+                                                                    Hubungi Admin via WA
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="bg-white p-4 rounded-lg text-left">
+                                                                <p className="text-sm font-bold text-gray-700 mb-2 block">Metode Pembayaran:</p>
+                                                                <div className="text-sm text-gray-600 mb-4 bg-gray-50 p-2 rounded border">
+                                                                    <p><strong>BCA:</strong> 8801234567890 (Beresin Admin)</p>
+                                                                    <p><strong>QRIS:</strong> Scan QR code pada menu pembayaran awal.</p>
+                                                                </div>
+
+                                                                <form onSubmit={(e) => {
+                                                                    e.preventDefault();
+                                                                    postExtraPay(route('orders.additional-payment', order.id));
+                                                                }}>
+                                                                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                                                                        Upload Bukti Transfer
+                                                                    </label>
+                                                                    <input
+                                                                        type="file"
+                                                                        className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 mb-2"
+                                                                        onChange={e => setExtraPayData('payment_proof', e.target.files[0])}
+                                                                        required
+                                                                    />
+                                                                    {extraPayErrors.payment_proof && <div className="text-red-500 text-xs mb-2">{extraPayErrors.payment_proof}</div>}
+
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={extraPayProcessing}
+                                                                        className="w-full bg-slate-900 text-white font-bold py-2 px-4 rounded-lg hover:bg-slate-800 transition disabled:opacity-50"
+                                                                    >
+                                                                        {extraPayProcessing ? 'Mengirim...' : 'Kirim Bukti Pembayaran'}
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-gray-600 text-sm mb-4">Please download and review your result below.</p>
+                                                        <div className="flex flex-col gap-3 justify-center items-center">
+                                                            <a href={`/storage/${order.result_file}`} target="_blank" className="inline-block bg-indigo-600 text-white px-8 py-3 rounded-full font-bold border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+                                                                Download Result 📂
+                                                            </a>
+                                                            {order.external_link && (
+                                                                <a href={order.external_link} target="_blank" className="text-indigo-600 underline font-semibold hover:text-indigo-800">
+                                                                    Open External Link 🔗
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
 
                                             {/* Review Actions */}
@@ -412,12 +483,7 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                                                 </div>
                                             )}
 
-                                            {order.status === 'completed' && (
-                                                <div className="bg-green-100 p-4 rounded-lg mt-4 text-center border border-green-200">
-                                                    <p className="text-green-800 font-bold">Order Completed</p>
-                                                    <p className="text-sm text-green-700">Thank you for ordering!</p>
-                                                </div>
-                                            )}
+
                                         </div>
                                     )}
                                 </div>

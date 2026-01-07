@@ -320,10 +320,9 @@ class OrderController extends Controller
             }
         }
 
-        // If no milestones OR it was the last milestone: Finalize Order
+        // If no milestones OR it was the last milestone: Move to Finalization Phase
         $order->update([
-            'status' => 'completed',
-            'completed_at' => now()
+            'status' => 'finalization'
         ]);
 
         \App\Models\Review::create([
@@ -333,7 +332,7 @@ class OrderController extends Controller
             'comment' => $validated['comment']
         ]);
 
-        return back()->with('message', 'Order completed! Thank you for your feedback.');
+        return back()->with('message', 'Review submitted! Order moved to finalization phase by Joki.');
     }
 
     public function requestRevision(Request $request, Order $order)

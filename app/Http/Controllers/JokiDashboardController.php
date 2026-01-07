@@ -24,7 +24,7 @@ class JokiDashboardController extends Controller
         // Active Workspace: Work started
         $activeTasks = Order::with(['package.service', 'user', 'chats', 'files', 'milestones'])
             ->where('joki_id', $user->id)
-            ->whereIn('status', ['in_progress', 'review', 'revision'])
+            ->whereIn('status', ['in_progress', 'review', 'revision', 'finalization'])
             ->whereNotNull('started_at')
             ->latest('started_at')
             ->get();
@@ -203,5 +203,52 @@ class JokiDashboardController extends Controller
         }
 
         return back()->with('message', 'Milestone submitted for review.');
+    }
+    public function finalizeOrder(Request $request, Order $order)
+    {
+        if ($order->joki_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($order->status !== 'finalization') {
+            return back()->with('error', 'Order is not in finalization phase.');
+        }
+
+        $request->validate([
+            'file' => 'nullable|file|max:20480', // 20MB
+            'external_link' => 'nullable|url',
+            'note' => 'nullable|string'
+        ]);
+
+        if (!$request->hasFile('file') && !$request->filled('external_link')) {
+            return back()->withErrors(['file' => 'Please provide at least a file or a link.']);
+        }
+
+        $path = $order->result_file;
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('final_results', 'public');
+        }
+
+        $order->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+            'result_file' => $path,
+            'external_link' => $request->filled('external_link') ? $request->external_link : $order->external_link,
+            // We can store final note in a separate field if needed, or append to description.
+            // For now, let's create a final OrderFile to store the note and file history.
+        ]);
+
+        // Save to OrderFile for history
+        if ($path || $request->filled('external_link')) {
+            \App\Models\OrderFile::create([
+                'order_id' => $order->id,
+                'file_path' => $path,
+                'external_link' => $request->external_link,
+                'version_label' => 'FINAL',
+                'note' => $request->note ?? 'Final Deliverable'
+            ]);
+        }
+
+        return back()->with('message', 'Order finalized and marked as completed!');
     }
 }

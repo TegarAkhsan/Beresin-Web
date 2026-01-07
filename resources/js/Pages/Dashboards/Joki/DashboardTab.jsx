@@ -30,9 +30,13 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
     const renderTask = (task) => {
         const isRevision = task.status === 'revision';
         const isReview = task.status === 'review';
+        const isFinalization = task.status === 'finalization';
 
         return (
-            <div key={task.id} className={`p-6 transition-colors flex flex-col md:flex-row gap-6 ${isRevision ? 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500' : 'hover:bg-gray-50 border-l-4 border-transparent'}`}>
+            <div key={task.id} className={`p-6 transition-colors flex flex-col md:flex-row gap-6 
+                ${isRevision ? 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500' :
+                    isFinalization ? 'bg-indigo-50 hover:bg-indigo-100 border-l-4 border-indigo-500' :
+                        'hover:bg-gray-50 border-l-4 border-transparent'}`}>
                 <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                         <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-white text-gray-600 border border-gray-200">
@@ -42,6 +46,7 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                             {task.package?.service?.name}
                         </span>
                         {isRevision && <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded uppercase animate-pulse">Action Required</span>}
+                        {isFinalization && <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded uppercase animate-pulse">Finalization Required</span>}
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-2">
                         {task.package?.name}
@@ -98,7 +103,7 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                                     onClick={() => openUploadModal(task)}
                                     className={`text-sm font-semibold hover:underline ${isRevision ? 'text-red-600 hover:text-red-800' : 'text-gray-600 hover:text-gray-900'}`}
                                 >
-                                    {isRevision ? 'Upload Revision' : 'Upload Result'}
+                                    {isRevision ? 'Upload Revision' : isFinalization ? 'Finalize Order 🚀' : 'Upload Result'}
                                 </button>
                             </>
                         )}
@@ -126,16 +131,16 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                                                     ? `Current: ${current.name}`
                                                     : (submitted
                                                         ? `In Review: ${submitted.name}`
-                                                        : (progress === 100 ? 'All Done' : 'Pending Start')
+                                                        : (isFinalization ? 'Finalizing' : (progress === 100 ? 'All Done' : 'Pending Start'))
                                                     )
                                                 }
                                             </span>
                                             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                                                {progress}%
+                                                {isFinalization ? '100%' : progress + '%'}
                                             </span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                                            <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${progress}%` }}></div>
+                                            <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${isFinalization ? 100 : progress}%` }}></div>
                                         </div>
                                         {current ? (
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
@@ -145,6 +150,10 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                                         ) : submitted ? (
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                                 Waiting for Review
+                                            </span>
+                                        ) : isFinalization ? (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                                Ready to Finalize
                                             </span>
                                         ) : null}
                                     </div>
@@ -156,8 +165,9 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                                     ${isRevision ? 'bg-red-100 text-red-800' :
                                     isReview ? 'bg-purple-100 text-purple-800' :
-                                        'bg-blue-100 text-blue-800'}`}>
-                                {isRevision ? 'Revision Requested' : isReview ? 'In Review' : 'In Progress'}
+                                        isFinalization ? 'bg-indigo-100 text-indigo-800' :
+                                            'bg-blue-100 text-blue-800'}`}>
+                                {isRevision ? 'Revision Requested' : isReview ? 'In Review' : isFinalization ? 'Finalization Phase' : 'In Progress'}
                             </span>
                         </div>
                     )}
@@ -167,6 +177,7 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
     };
 
     const revisions = activeTasks.filter(t => t.status === 'revision');
+    const finalization = activeTasks.filter(t => t.status === 'finalization');
     const inProgress = activeTasks.filter(t => t.status === 'in_progress');
     const inReview = activeTasks.filter(t => t.status === 'review');
 
@@ -216,6 +227,7 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                 <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                     <h2 className="text-xl font-bold text-gray-900">Current Tasks</h2>
                     <div className="flex gap-2">
+                        {finalization.length > 0 && <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full">{finalization.length} Finalization</span>}
                         {revisions.length > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">{revisions.length} Revisions</span>}
                         {inProgress.length > 0 && <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">{inProgress.length} In Progress</span>}
                         {inReview.length > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">{inReview.length} In Review</span>}
@@ -231,6 +243,15 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
                         </div>
                     ) : (
                         <>
+                            {finalization.length > 0 && (
+                                <div className="bg-indigo-50/50">
+                                    <div className="px-6 py-2 bg-indigo-100/50 text-indigo-800 text-xs font-black uppercase tracking-widest border-l-4 border-indigo-500">
+                                        Action Required: Finalization
+                                    </div>
+                                    {finalization.map(renderTask)}
+                                </div>
+                            )}
+
                             {revisions.length > 0 && (
                                 <div className="bg-red-50/50">
                                     <div className="px-6 py-2 bg-red-100/50 text-red-800 text-xs font-black uppercase tracking-widest border-l-4 border-red-500">
@@ -242,14 +263,14 @@ export default function DashboardTab({ user, stats, activeTasks, openDetailModal
 
                             {inProgress.length > 0 && (
                                 <div>
-                                    {revisions.length > 0 && <div className="px-6 py-2 bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-widest">Active Jobs</div>}
+                                    {(revisions.length > 0 || finalization.length > 0) && <div className="px-6 py-2 bg-gray-50 text-gray-500 text-xs font-black uppercase tracking-widest">Active Jobs</div>}
                                     {inProgress.map(renderTask)}
                                 </div>
                             )}
 
                             {inReview.length > 0 && (
                                 <div className="bg-gray-50/30">
-                                    {(revisions.length > 0 || inProgress.length > 0) && <div className="px-6 py-2 bg-purple-50 text-purple-800 text-xs font-black uppercase tracking-widest border-l-4 border-purple-200">Waiting for Review</div>}
+                                    {(revisions.length > 0 || inProgress.length > 0 || finalization.length > 0) && <div className="px-6 py-2 bg-purple-50 text-purple-800 text-xs font-black uppercase tracking-widest border-l-4 border-purple-200">Waiting for Review</div>}
                                     {inReview.map(renderTask)}
                                 </div>
                             )}

@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/joki/orders/{order}/upload', [App\Http\Controllers\JokiDashboardController::class, 'uploadResult'])->name('joki.orders.upload');
     Route::post('/joki/orders/{order}/milestone', [App\Http\Controllers\JokiDashboardController::class, 'uploadMilestone'])->name('joki.orders.milestone');
     Route::post('/joki/orders/{order}/link', [App\Http\Controllers\JokiDashboardController::class, 'updateLink'])->name('joki.orders.link');
+    Route::post('/joki/orders/{order}/finalize', [App\Http\Controllers\JokiDashboardController::class, 'finalizeOrder'])->name('joki.finalize-order');
 
     // Chat Routes (Customer)
     Route::get('/chat/messages', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');

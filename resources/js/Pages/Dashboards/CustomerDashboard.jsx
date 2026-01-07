@@ -38,6 +38,22 @@ export default function CustomerDashboard({ auth, orders, stats }) {
         </button>
     );
 
+    // Dismissed Notification Logic
+    const [dismissedIds, setDismissedIds] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('dismissed_completed_orders')) || [];
+        } catch (e) {
+            return [];
+        }
+    });
+
+    const handleViewOrders = (newIds) => {
+        const updatedIds = [...new Set([...dismissedIds, ...newIds])];
+        setDismissedIds(updatedIds);
+        localStorage.setItem('dismissed_completed_orders', JSON.stringify(updatedIds));
+        setActiveTab('orders');
+    };
+
     return (
         <div className="min-h-screen flex font-sans selection:bg-yellow-400 selection:text-black bg-[#F3F3F1]">
 
@@ -96,6 +112,45 @@ export default function CustomerDashboard({ auth, orders, stats }) {
                         </p>
                     </div>
                 </header>
+
+                {/* NOTIFICATIONS */}
+                <div className="mb-8 space-y-4 relative z-10">
+                    {/* Flash Message */}
+                    {usePage().props.flash?.message && (
+                        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-r shadow-sm">
+                            <p className="font-bold">Notification</p>
+                            <p className="text-sm">{usePage().props.flash.message}</p>
+                        </div>
+                    )}
+
+                    {/* Completed Order Notification */}
+                    {(() => {
+                        const orderList = orders.data || orders;
+                        if (Array.isArray(orderList)) {
+                            const newCompleted = orderList.filter(o => o.status === 'completed' && !dismissedIds.includes(o.id));
+
+                            if (newCompleted.length > 0) {
+                                return (
+                                    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-r shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                        <div>
+                                            <p className="font-bold flex items-center gap-2">
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                Order Completed!
+                                            </p>
+                                            <p className="text-sm">You have {newCompleted.length} completed order(s). Check them now!</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleViewOrders(newCompleted.map(o => o.id))}
+                                            className="whitespace-nowrap px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-lg shadow-sm hover:bg-green-700 transition"
+                                        >
+                                            Lihat Order
+                                        </button>
+                                    </div>
+                                );
+                            }
+                        }
+                    })()}
+                </div>
 
                 {/* OVERVIEW CONTENT */}
                 {activeTab === 'overview' && (

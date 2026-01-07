@@ -117,7 +117,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
         let type = 'regular';
         let defaultMilestoneId = '';
 
-        if (order.milestones && order.milestones.length > 0) {
+        if (order.status === 'finalization') {
+            type = 'final';
+        } else if (order.milestones && order.milestones.length > 0) {
             type = 'milestone';
             // Find active milestone
             let active = order.milestones.find(m => ['in_progress', 'revision'].includes(m.status));
@@ -153,7 +155,14 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
     const submitUpload = (e) => {
         e.preventDefault();
 
-        if (uploadType === 'milestone') {
+        if (uploadType === 'final') {
+            post(route('joki.finalize-order', selectedOrder.id), {
+                onSuccess: () => {
+                    reset();
+                    closeUploadModal();
+                }
+            });
+        } else if (uploadType === 'milestone') {
             post(route('joki.orders.milestone', selectedOrder.id), {
                 onSuccess: () => {
                     reset();
@@ -501,7 +510,9 @@ export default function JokiDashboard({ auth, upcomingTasks, activeTasks, review
             {/* 3. Upload Modal */}
             <Modal show={showUploadModal} onClose={closeUploadModal}>
                 <div className="p-8 max-h-[85vh] overflow-y-auto custom-scrollbar">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Sync Deliverables</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                        {uploadType === 'final' ? 'Finalize Project & Deliver' : 'Sync Deliverables'}
+                    </h2>
 
                     {/* Main Form */}
                     <form onSubmit={submitUpload} autoComplete="off" key={selectedOrder ? selectedOrder.id : 'upload-form'}>
