@@ -1,14 +1,12 @@
 {
     "compilerOptions": {
-        "baseUrl": ".",
-        "ignoreDeprecations": "5.0",
         "jsx": "react",
         "paths": {
             "@/*": [
-                "resources/js/*"
+                "./resources/js/*"
             ],
             "ziggy-js": [
-                "vendor/tightenco/ziggy"
+                "./vendor/tightenco/ziggy"
             ]
         }
     },
