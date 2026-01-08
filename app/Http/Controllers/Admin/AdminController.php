@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\Auth;
+
 class AdminController extends Controller
 {
     public function index()
@@ -103,9 +105,9 @@ class AdminController extends Controller
             'availableBalance' => $availableBalance,
             'history' => $history,
             'bank_details' => [
-                'bank_name' => auth()->user()->bank_name,
-                'account_number' => auth()->user()->account_number,
-                'account_holder' => auth()->user()->account_holder,
+                'bank_name' => Auth::user()->bank_name,
+                'account_number' => Auth::user()->account_number,
+                'account_holder' => Auth::user()->account_holder,
             ]
         ]);
     }
@@ -161,7 +163,7 @@ class AdminController extends Controller
             return back()->withErrors(['amount' => 'Insufficient funds. Available: Rp ' . number_format($availableBalance, 0, ',', '.')]);
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
         $bankDetailsSnapshot = [
             'bank_name' => $user->bank_name,
             'account_number' => $user->account_number,
@@ -185,7 +187,7 @@ class AdminController extends Controller
             'account_holder' => 'required|string|max:255',
         ]);
 
-        $user = auth()->user();
+        $user = Auth::user();
         $user->update([
             'bank_name' => $request->bank_name,
             'account_number' => $request->account_number,

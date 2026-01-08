@@ -6,11 +6,13 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\Auth;
+
 class JokiDashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         // 1. Task Lifecycle Lists
         // Upcoming: Assigned but work not started
@@ -115,7 +117,7 @@ class JokiDashboardController extends Controller
 
     public function startTask(Order $order)
     {
-        if ($order->joki_id !== auth()->id()) {
+        if ($order->joki_id !== Auth::id()) {
             abort(403);
         }
 
@@ -131,7 +133,7 @@ class JokiDashboardController extends Controller
     // Upload versioned file
     public function uploadResult(Request $request, Order $order)
     {
-        if ($order->joki_id !== auth()->id()) {
+        if ($order->joki_id !== Auth::id()) {
             abort(403);
         }
 
@@ -163,7 +165,7 @@ class JokiDashboardController extends Controller
     // Update External Link
     public function updateLink(Request $request, Order $order)
     {
-        if ($order->joki_id !== auth()->id()) {
+        if ($order->joki_id !== Auth::id()) {
             abort(403);
         }
 
@@ -178,7 +180,7 @@ class JokiDashboardController extends Controller
 
     public function uploadMilestone(Request $request, Order $order)
     {
-        if ($order->joki_id !== auth()->id()) {
+        if ($order->joki_id !== Auth::id()) {
             abort(403);
         }
 
@@ -235,7 +237,7 @@ class JokiDashboardController extends Controller
     }
     public function finalizeOrder(Request $request, Order $order)
     {
-        if ($order->joki_id !== auth()->id()) {
+        if ($order->joki_id !== Auth::id()) {
             abort(403);
         }
 

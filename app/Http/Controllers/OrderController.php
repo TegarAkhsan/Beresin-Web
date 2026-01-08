@@ -66,7 +66,7 @@ class OrderController extends Controller
 
         $validated = $request->validate($rules);
 
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Update User Profile
         $user->update([
@@ -160,7 +160,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
             abort(403);
         }
 
@@ -196,7 +196,7 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order)
     {
-        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin' && auth()->user()->role !== 'joki') {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 'admin' && Auth::user()->role !== 'joki') {
             abort(403);
         }
 
@@ -226,7 +226,7 @@ class OrderController extends Controller
         }
 
         // Status update for Joki?
-        if ($request->has('status') && auth()->user()->role === 'joki') {
+        if ($request->has('status') && Auth::user()->role === 'joki') {
             $order->update(['status' => $request->input('status')]);
             return back()->with('message', 'Status updated.');
         }
@@ -236,7 +236,7 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
             abort(403);
         }
 
@@ -251,7 +251,7 @@ class OrderController extends Controller
 
     public function downloadInvoice(Order $order)
     {
-        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && Auth::user()->role !== 'admin') {
             abort(403);
         }
 

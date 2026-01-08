@@ -6,6 +6,8 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+use Illuminate\Support\Facades\Auth;
+
 class CheckBlacklist
 {
     /**
@@ -15,13 +17,14 @@ class CheckBlacklist
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->is_blacklisted) {
-            auth()->logout();
+        if (Auth::check() && Auth::user()->is_blacklisted) {
+            $reason = Auth::user()->blacklist_reason;
+            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()->route('login')->withErrors([
-                'email' => 'Your account has been blacklisted. Reason: ' . (auth()->user()->blacklist_reason ?? 'Violation of terms.'),
+                'email' => 'Your account has been blacklisted. Reason: ' . ($reason ?? 'Violation of terms.'),
             ]);
         }
 

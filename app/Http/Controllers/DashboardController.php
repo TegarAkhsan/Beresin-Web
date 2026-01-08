@@ -6,11 +6,13 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\Auth;
+
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $orders = [];
 
         if ($user->role === 'customer') {
