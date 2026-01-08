@@ -7,6 +7,7 @@ use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
@@ -159,7 +160,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
             abort(403);
         }
 
@@ -175,7 +176,7 @@ class OrderController extends Controller
 
     public function review(Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
@@ -195,7 +196,7 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order)
     {
-        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin' && auth()->user()->role !== 'joki') {
+        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin' && auth()->user()->role !== 'joki') {
             abort(403);
         }
 
@@ -235,7 +236,7 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
             abort(403);
         }
 
@@ -250,7 +251,7 @@ class OrderController extends Controller
 
     public function downloadInvoice(Order $order)
     {
-        if ($order->user_id !== auth()->id() && auth()->user()->role !== 'admin') {
+        if ($order->user_id !== Auth::id() && auth()->user()->role !== 'admin') {
             abort(403);
         }
 
@@ -270,7 +271,7 @@ class OrderController extends Controller
 
     public function acceptResult(Request $request, Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
@@ -310,7 +311,7 @@ class OrderController extends Controller
                     // Create review log but don't finalize order
                     \App\Models\Review::create([
                         'order_id' => $order->id,
-                        'user_id' => auth()->id(),
+                        'user_id' => Auth::id(),
                         'rating' => $validated['rating'],
                         'comment' => "Milestone '{$currentMilestone->name}' Approved: " . $validated['comment']
                     ]);
@@ -327,7 +328,7 @@ class OrderController extends Controller
 
         \App\Models\Review::create([
             'order_id' => $order->id,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'rating' => $validated['rating'],
             'comment' => $validated['comment']
         ]);
@@ -337,7 +338,7 @@ class OrderController extends Controller
 
     public function requestRevision(Request $request, Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
@@ -385,7 +386,7 @@ class OrderController extends Controller
 
     public function requestRefund(Request $request, Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
@@ -408,7 +409,7 @@ class OrderController extends Controller
 
     public function uploadAdditionalPayment(Request $request, Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if ($order->user_id !== Auth::id()) {
             abort(403);
         }
 
