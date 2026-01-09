@@ -13,6 +13,12 @@ class ChatController extends Controller
     // Customer: Get own messages
     public function index()
     {
+        // Mark admin replies as read when customer loads chat
+        Chat::where('user_id', Auth::id())
+            ->where('is_admin_reply', true)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
         return Chat::where('user_id', Auth::id())
             ->orderBy('created_at', 'asc')
             ->get();

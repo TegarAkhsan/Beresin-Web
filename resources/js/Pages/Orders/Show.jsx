@@ -27,28 +27,24 @@ export default function Show({ auth, order, whatsapp_number, qris_image }) {
         payment_proof: null
     });
 
-    const [timeLeft, setTimeLeft] = useState(0);
-    // Use order.payment_method if available, otherwise default to 'va' (or 'qris' if you prefer)
+    // Countdown Logic (3 hours from created_at)
+    const calculateTimeLeft = () => {
+        const createdTime = new Date(order.created_at).getTime();
+        const expiryTime = createdTime + (3 * 60 * 60 * 1000); // 3 hours in ms
+        const now = new Date().getTime();
+        const distance = expiryTime - now;
+        return distance > 0 ? distance : 0;
+    };
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
     const [paymentMethod, setPaymentMethod] = useState(order.payment_method || 'va');
     const [selectedBank, setSelectedBank] = useState('bca');
     const [showAcceptModal, setShowAcceptModal] = useState(false);
     const [showRevisionModal, setShowRevisionModal] = useState(false);
 
     useEffect(() => {
-        // Countdown Logic (3 hours from created_at)
-        const createdTime = new Date(order.created_at).getTime();
-        const expiryTime = createdTime + (3 * 60 * 60 * 1000); // 3 hours in ms
-
         const interval = setInterval(() => {
-            const now = new Date().getTime();
-            const distance = expiryTime - now;
-
-            if (distance < 0) {
-                clearInterval(interval);
-                setTimeLeft(0);
-            } else {
-                setTimeLeft(distance);
-            }
+            setTimeLeft(calculateTimeLeft());
         }, 1000);
 
         return () => clearInterval(interval);
