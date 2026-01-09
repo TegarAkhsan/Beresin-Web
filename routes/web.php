@@ -70,6 +70,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 Route::middleware('auth')->group(function () {
     // Universal Notification Check
     Route::get('/notifications/check', [App\Http\Controllers\NotificationController::class, 'check'])->name('notifications.check');
+    Route::post('/push/subscribe', [App\Http\Controllers\NotificationController::class, 'subscribe'])->name('push.subscribe');
 
     Route::get('/orders/create', [App\Http\Controllers\OrderController::class, 'create'])->name('orders.create');
     Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->name('orders.store');

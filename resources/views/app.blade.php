@@ -6,6 +6,12 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- PWA Code -->
+        <meta name="theme-color" content="#FFC107"/>
+        <link rel="apple-touch-icon" href="/logo-192x192.png">
+        <link rel="manifest" href="/build/manifest.webmanifest"> 
+        {{-- In dev, this might be /manifest.webmanifest, but usually build/ is safe for prod --}}
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

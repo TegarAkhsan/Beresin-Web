@@ -166,6 +166,12 @@ class AdminOrderController extends Controller
             'status' => 'in_progress',
         ]);
 
+        // Notify Joki
+        $joki = User::find($jokiId);
+        if ($joki) {
+            $joki->notify(new \App\Notifications\TaskAssignedNotification($order));
+        }
+
         // Generate Milestones if they don't exist
         $serviceId = $order->package->service_id;
         $order->load('milestones');
@@ -244,6 +250,9 @@ class AdminOrderController extends Controller
                     'joki_fee' => $fee,
                     'status' => 'in_progress'
                 ]);
+
+                // Notify Joki
+                $candidate->notify(new \App\Notifications\TaskAssignedNotification($order));
 
                 // Generate Milestones
                 $serviceId = $order->package->service_id;

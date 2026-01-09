@@ -126,7 +126,10 @@ class ChatController extends Controller
             'is_admin_reply' => true,
         ]);
 
-        return response()->json($chat);
+        // Notify User (Customer)
+        $user->notify(new \App\Notifications\NewChatMessageNotification('Admin Approved', $request->message));
+
+        return back();
     }
     // Admin: Check for unread messages (Polling)
     public function checkUnread()

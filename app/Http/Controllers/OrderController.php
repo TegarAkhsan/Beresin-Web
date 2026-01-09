@@ -154,6 +154,13 @@ class OrderController extends Controller
         $message = $package->is_negotiable
             ? 'Order proposal submitted! Waiting for admin approval for negotiation.'
             : 'Order placed successfully! Please complete payment.';
+        
+        // Notify Admins
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        // Only notify if status is waiting_approval (Negotiation)
+        if ($status === 'waiting_approval') {
+             \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewOrderNotification($order));
+        }
 
         return redirect()->route('orders.show', $order)->with('message', $message);
     }
@@ -213,6 +220,11 @@ class OrderController extends Controller
                 'payment_status' => 'pending_verification',
                 'status' => 'waiting_approval',
             ]);
+
+            // Notify Admins
+            $admins = \App\Models\User::where('role', 'admin')->get();
+            \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewOrderNotification($order));
+
             return back()->with('message', 'Payment confirmed! Waiting for admin verification.');
         }
 
@@ -425,6 +437,8 @@ class OrderController extends Controller
         ]);
 
         // Optional: Send notification to admin (TODO)
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\NewOrderNotification($order));
 
         return back()->with('message', 'Bukti pembayaran tambahan berhasil diupload. Mohon tunggu konfirmasi admin.');
     }

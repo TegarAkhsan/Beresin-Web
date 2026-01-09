@@ -40,6 +40,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn() => $request->session()->get('error'),
                 'show_dashboard_prompt' => fn() => $request->session()->get('show_dashboard_prompt'),
             ],
+            'vapid_public_key' => env('VAPID_PUBLIC_KEY'),
         ];
     }
 }

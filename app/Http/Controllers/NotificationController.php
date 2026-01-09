@@ -6,9 +6,30 @@ use App\Models\Chat;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use NotificationChannels\WebPush\PushSubscription; // Ensure this is imported if used directly, but trait on User handles it.
 
 class NotificationController extends Controller
 {
+    public function subscribe(Request $request)
+    {
+        $request->validate([
+            'endpoint'    => 'required',
+            'keys.auth'   => 'required',
+            'keys.p256dh' => 'required',
+        ]);
+
+        $user = Auth::user();
+        if ($user) {
+            $user->updatePushSubscription(
+                $request->endpoint,
+                $request->keys['p256dh'],
+                $request->keys['auth']
+            );
+        }
+
+        return response()->json(['success' => true]);
+    }
+
     public function check(Request $request)
     {
         $user = Auth::user();
@@ -29,8 +50,13 @@ class NotificationController extends Controller
                 ->where('is_admin_reply', false)
                 ->count();
 
-            // 2. Pending Orders (Waiting Approval)
-            $response['pending_orders'] = Order::where('status', 'waiting_approval')->count();
+            // 2. Pending Orders (Waiting Approval OR Pending Payment with Proof)
+            $response['pending_orders'] = Order::where('status', 'waiting_approval')
+                ->orWhere(function ($query) {
+                    $query->where('status', 'pending_payment')
+                        ->whereNotNull('payment_proof');
+                })
+                ->count();
 
         } elseif ($user->role === 'joki') {
             // 1. Unread Chats (Admin -> Joki) - Future proofing if Joki chat is added
