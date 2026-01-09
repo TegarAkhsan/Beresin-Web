@@ -30,8 +30,8 @@ export default function Create({ auth }) {
             <Head title="Create User" />
 
             <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <div className="p-6 text-gray-900 dark:text-gray-100">
+                <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div className="p-6 text-gray-900">
                         <form onSubmit={submit} className="max-w-xl">
                             {/* Name */}
                             <div>
@@ -72,7 +72,7 @@ export default function Create({ auth }) {
                                     id="role"
                                     name="role"
                                     value={data.role}
-                                    className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                    className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                     onChange={(e) => setData('role', e.target.value)}
                                     required
                                 >
@@ -91,7 +91,7 @@ export default function Create({ auth }) {
                                         id="specialization"
                                         name="specialization"
                                         value={data.specialization}
-                                        className="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
                                         onChange={(e) => setData('specialization', e.target.value)}
                                     >
                                         <option value="">-- Select Specialization --</option>

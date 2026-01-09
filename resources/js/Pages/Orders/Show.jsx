@@ -561,14 +561,13 @@ Mohon konfirmasi dan prosesnya. Terima kasih.`;
                             </div>
 
                             {/* BACK TO DASHBOARD BUTTON (Moved Here) */}
-                            {shouldHideHome && (
-                                <Link
-                                    href={route('dashboard')}
-                                    className="block w-full text-center py-4 bg-white text-slate-700 font-bold rounded-2xl border-2 border-slate-300 shadow-[4px_4px_0px_0px_rgba(203,213,225,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all hover:border-slate-900 hover:text-slate-900 mt-6"
-                                >
-                                    ← Beranda
-                                </Link>
-                            )}
+                            {/* BACK TO DASHBOARD BUTTON */}
+                            <Link
+                                href={route('dashboard')}
+                                className="block w-full text-center py-3 bg-white text-slate-900 font-black rounded-lg border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all mt-6"
+                            >
+                                KEMBALI KE DASHBOARD
+                            </Link>
                         </div>
                     </div>
                 </div>

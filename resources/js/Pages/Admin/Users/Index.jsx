@@ -54,12 +54,12 @@ export default function Index({ auth, users, filters }) {
     return (
         <AdminLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">User Management</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">User Management</h2>}
         >
             <Head title="Manage Users" />
 
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div className="p-6 text-gray-900 dark:text-gray-100">
+            <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div className="p-6 text-gray-900">
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <Link
                             href={route('admin.users.create')}
@@ -122,8 +122,8 @@ export default function Index({ auth, users, filters }) {
                                     <button
                                         onClick={() => openBlacklistModal(user)}
                                         className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition ${user.is_blacklisted
-                                                ? 'text-green-600 bg-green-50 hover:bg-green-100'
-                                                : 'text-slate-700 bg-slate-50 hover:bg-slate-100'
+                                            ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                                            : 'text-slate-700 bg-slate-50 hover:bg-slate-100'
                                             }`}
                                     >
                                         {user.is_blacklisted ? 'Restore' : 'Blacklist'}
@@ -141,8 +141,8 @@ export default function Index({ auth, users, filters }) {
 
                     {/* Desktop Table View */}
                     <div className="hidden lg:block overflow-x-auto">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <table className="w-full text-sm text-left text-gray-500">
+                            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                                 <tr>
                                     <th scope="col" className="px-6 py-3">Name</th>
                                     <th scope="col" className="px-6 py-3">Role</th>
@@ -154,8 +154,8 @@ export default function Index({ auth, users, filters }) {
                             </thead>
                             <tbody>
                                 {users.data.map((user) => (
-                                    <tr key={user.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                        <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                    <tr key={user.id} className="bg-white border-b hover:bg-gray-50">
+                                        <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
                                             {user.name}
                                         </th>
                                         <td className="px-6 py-4">
@@ -187,7 +187,7 @@ export default function Index({ auth, users, filters }) {
                                         <td className="px-6 py-4 space-x-2">
                                             <Link
                                                 href={route('admin.users.edit', user.id)}
-                                                className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
+                                                className="font-medium text-blue-600 hover:underline"
                                             >
                                                 Edit
                                             </Link>
@@ -199,7 +199,7 @@ export default function Index({ auth, users, filters }) {
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(user.id)}
-                                                className="font-medium text-red-600 dark:text-red-500 hover:underline"
+                                                className="font-medium text-red-600 hover:underline"
                                             >
                                                 Delete
                                             </button>

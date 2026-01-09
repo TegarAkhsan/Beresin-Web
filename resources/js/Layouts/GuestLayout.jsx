@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import Asterisk from '@/Components/Landing/Asterisk';
+import ApplicationLogo from '@/Components/ApplicationLogo';
 
 export default function GuestLayout({ children }) {
     return (
@@ -14,7 +15,7 @@ export default function GuestLayout({ children }) {
             <div className="relative z-10 mb-8">
                 <Link href="/" className="flex flex-col items-center group">
                     <div className="text-4xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-yellow-400 border-2 border-slate-900"></span>
+                        <ApplicationLogo className="w-12 h-12" />
                         Beresin.
                     </div>
                     <p className="text-xs text-slate-500 mt-2 font-bold tracking-widest uppercase bg-white px-2 py-1 border border-slate-900 rounded-md shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">

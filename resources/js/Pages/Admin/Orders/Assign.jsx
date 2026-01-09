@@ -96,6 +96,14 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
 
     const [selectedJoki, setSelectedJoki] = useState(null);
     const [selectedJokiJob, setSelectedJokiJob] = useState(null); // Detail view for specific job inside modal
+    const [currentSlide, setCurrentSlide] = useState(1); // For Detail View Slides
+
+    // Reset slide when job detail is opened
+    useEffect(() => {
+        if (selectedJokiJob) {
+            setCurrentSlide(1);
+        }
+    }, [selectedJokiJob]);
 
     const openJokiModal = (joki) => {
         setSelectedJoki(joki);
@@ -106,6 +114,13 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
         setSelectedJoki(null);
         setSelectedJokiJob(null);
     };
+
+    // Reset slide when job detail is opened (Moved here to be after state declaration)
+    useEffect(() => {
+        if (selectedJokiJob) {
+            setCurrentSlide(1);
+        }
+    }, [selectedJokiJob]);
 
     return (
         <AdminLayout
@@ -548,82 +563,152 @@ export default function Assign({ auth, orders, assignedOrders, jokis, filters })
                             </div>
                         </>
                     ) : (
-                        // Detailed View
                         <>
                             <div className="flex items-center gap-2 mb-6">
-                                <button onClick={() => setSelectedJokiJob(null)} className="text-gray-400 hover:text-gray-600">
-                                    ← Back
+                                <button onClick={() => setSelectedJokiJob(null)} className="px-6 py-2 bg-white border-2 border-slate-900 shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all font-black text-xs text-slate-900 uppercase rounded-full tracking-wider">
+                                    Back
                                 </button>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 ml-2">
                                     Order Details: {selectedJokiJob.order_number}
                                 </h2>
                             </div>
 
-                            <div className="space-y-6">
-                                {/* Customer Info */}
-                                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Customer Information</h3>
-                                    <div className="grid grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span className="block text-gray-400 text-xs">Name</span>
-                                            <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedJokiJob.user?.name}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-gray-400 text-xs">Email</span>
-                                            <span className="font-medium text-gray-800 dark:text-gray-200">{selectedJokiJob.user?.email}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-gray-400 text-xs">Phone</span>
-                                            <span className="font-medium text-gray-800 dark:text-gray-200">{selectedJokiJob.user?.phone || '-'}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-gray-400 text-xs">University</span>
-                                            <span className="font-medium text-gray-800 dark:text-gray-200">{selectedJokiJob.user?.university || '-'}</span>
-                                        </div>
-                                    </div>
+                            {/* Slide Navigation & Progress */}
+                            <div className="mb-6">
+                                <div className="flex justify-center gap-2 mb-2">
+                                    <span className={`h-2 w-8 rounded-full transition-all ${currentSlide === 1 ? 'bg-indigo-600' : 'bg-gray-200'}`}></span>
+                                    <span className={`h-2 w-8 rounded-full transition-all ${currentSlide === 2 ? 'bg-indigo-600' : 'bg-gray-200'}`}></span>
+                                    <span className={`h-2 w-8 rounded-full transition-all ${currentSlide === 3 ? 'bg-indigo-600' : 'bg-gray-200'}`}></span>
                                 </div>
-
-                                {/* Package & Order Info */}
-                                <div>
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">Service & Package Details</h3>
-                                    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className="text-indigo-600 font-bold text-lg">{selectedJokiJob.package?.name}</span>
-                                            <span className="text-sm bg-purple-100 text-purple-700 px-2 py-1 rounded">{selectedJokiJob.package?.service?.name}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">{selectedJokiJob.package?.description}</p>
-
-                                        {/* Features List */}
-                                        {selectedJokiJob.package?.features && Array.isArray(selectedJokiJob.package.features) && (
-                                            <ul className="text-xs text-gray-500 list-disc list-inside mt-2 bg-white dark:bg-gray-800 p-2 rounded">
-                                                {selectedJokiJob.package.features.map((f, i) => (
-                                                    <li key={i}>{f}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Task Notes */}
-                                <div>
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Task Instructions / Notes</h3>
-                                    <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100 p-4 rounded-lg text-sm whitespace-pre-wrap border border-amber-100">
-                                        {selectedJokiJob.description || 'No specific instructions provided.'}
-                                    </div>
-                                </div>
-
-                                <div className="text-right text-xs text-gray-400">
-                                    Deadline: <span className="font-mono text-gray-600 dark:text-gray-300 font-bold">{new Date(selectedJokiJob.deadline).toLocaleDateString()}</span>
+                                <div className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    {currentSlide === 1 && "Customer Info"}
+                                    {currentSlide === 2 && "Service & Package"}
+                                    {currentSlide === 3 && "Instructions & Notes"}
                                 </div>
                             </div>
 
-                            <div className="mt-6 flex justify-end">
-                                <SecondaryButton onClick={closeJokiModal}>Close</SecondaryButton>
+                            <div className="min-h-[300px]">
+                                {/* Slide 1: Customer Info */}
+                                {currentSlide === 1 && (
+                                    <div className="animate-fade-in bg-white dark:bg-gray-700/50 p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                        <h3 className="text-sm font-black text-slate-900 uppercase mb-4 border-b-2 border-slate-100 pb-2">Customer Information</h3>
+                                        <div className="grid grid-cols-1 gap-4 text-sm">
+                                            <div>
+                                                <span className="block text-slate-500 text-xs font-bold uppercase mb-1">Name</span>
+                                                <span className="font-bold text-lg text-slate-900">{selectedJokiJob.user?.name}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-slate-500 text-xs font-bold uppercase mb-1">Email</span>
+                                                <span className="font-bold text-slate-900">{selectedJokiJob.user?.email}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <span className="block text-slate-500 text-xs font-bold uppercase mb-1">Phone</span>
+                                                    <span className="font-bold text-slate-900">{selectedJokiJob.user?.phone || '-'}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-slate-500 text-xs font-bold uppercase mb-1">University</span>
+                                                    <span className="font-bold text-slate-900">{selectedJokiJob.user?.university || '-'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Slide 2: Package & Order Info */}
+                                {currentSlide === 2 && (
+                                    <div className="animate-fade-in bg-white dark:bg-gray-700/50 p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                        <h3 className="text-sm font-black text-slate-900 uppercase mb-4 border-b-2 border-slate-100 pb-2">Service & Package Details</h3>
+                                        <div>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-indigo-600 font-black text-xl">{selectedJokiJob.package?.name}</span>
+                                                <span className="text-xs font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-full border border-purple-200">{selectedJokiJob.package?.service?.name}</span>
+                                            </div>
+                                            <p className="text-sm font-medium text-slate-600 mb-4 italic">"{selectedJokiJob.package?.description}"</p>
+
+                                            {/* Features List */}
+                                            {(() => {
+                                                let feats = selectedJokiJob.package?.features;
+                                                if (typeof feats === 'string') {
+                                                    try {
+                                                        feats = JSON.parse(feats);
+                                                    } catch (e) {
+                                                        feats = [];
+                                                    }
+                                                }
+
+                                                if (Array.isArray(feats) && feats.length > 0) {
+                                                    return (
+                                                        <div className="mt-4 pt-4 border-t-2 border-dashed border-slate-200">
+                                                            <p className="text-xs font-black text-slate-400 mb-2 uppercase tracking-wide">Included Features:</p>
+                                                            <ul className="grid grid-cols-1 gap-2">
+                                                                {feats.map((feature, index) => (
+                                                                    <li key={index} className="flex items-start text-xs font-bold text-slate-700">
+                                                                        <span className="mr-2 text-green-500 text-sm">✔</span>
+                                                                        {feature}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Slide 3: Task Notes */}
+                                {currentSlide === 3 && (
+                                    <div className="animate-fade-in bg-white dark:bg-gray-700/50 p-6 rounded-2xl border-2 border-slate-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                                        <h3 className="text-sm font-black text-slate-900 uppercase mb-4 border-b-2 border-slate-100 pb-2">Task Instructions / Notes</h3>
+                                        <div className="bg-yellow-50 text-slate-800 p-4 rounded-xl text-sm whitespace-pre-wrap border-2 border-yellow-200 font-medium">
+                                            {selectedJokiJob.description || 'No specific instructions provided.'}
+                                        </div>
+                                        <div className="mt-6 text-right">
+                                            <p className="text-xs font-bold text-slate-400 uppercase">Deadline</p>
+                                            <p className="text-lg font-mono font-black text-slate-900">{new Date(selectedJokiJob.deadline).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Controls */}
+                            <div className="mt-8 flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-200">
+                                <button
+                                    onClick={() => setCurrentSlide(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentSlide === 1}
+                                    className={`px-4 py-2 font-bold text-xs uppercase rounded-lg transition-all flex items-center gap-2
+                                        ${currentSlide === 1
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : 'bg-white text-slate-900 shadow-sm border border-gray-200 hover:border-slate-900 hover:shadow-md'}`}
+                                >
+                                    <span>←</span> Prev
+                                </button>
+
+                                <span className="font-mono text-xs font-bold text-slate-400">
+                                    Slide {currentSlide} / 3
+                                </span>
+
+                                <button
+                                    onClick={() => setCurrentSlide(prev => Math.min(prev + 1, 3))}
+                                    disabled={currentSlide === 3}
+                                    className={`px-4 py-2 font-bold text-xs uppercase rounded-lg transition-all flex items-center gap-2
+                                        ${currentSlide === 3
+                                            ? 'text-gray-300 cursor-not-allowed'
+                                            : 'bg-slate-900 text-white shadow-md hover:bg-slate-800'}`}
+                                >
+                                    Next <span>→</span>
+                                </button>
+                            </div>
+
+                            <div className="mt-4 flex justify-center">
+                                <SecondaryButton className="w-full justify-center border-none text-slate-400 hover:text-slate-600" onClick={closeJokiModal}>Close Modal</SecondaryButton>
                             </div>
                         </>
                     )}
                 </div>
             </Modal>
-        </AdminLayout>
+        </AdminLayout >
     );
 }

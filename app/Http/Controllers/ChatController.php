@@ -128,4 +128,13 @@ class ChatController extends Controller
 
         return response()->json($chat);
     }
+    // Admin: Check for unread messages (Polling)
+    public function checkUnread()
+    {
+        $unreadCount = Chat::where('is_read', false)
+            ->where('is_admin_reply', false)
+            ->count();
+
+        return response()->json(['unread_count' => $unreadCount]);
+    }
 }

@@ -3,15 +3,63 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Toast from '@/Components/Toast';
 
 export default function AuthenticatedLayout({ header, children, hideNavigation = false, hideHomeLink = false }) {
     const { auth, flash } = usePage().props;
     const user = auth.user;
 
-    const [showingNavigationDropdown, setShowingNavigationDropdown] =
-        useState(false);
+    const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [newTaskCount, setNewTaskCount] = useState(0);
+    const [showChatToast, setShowChatToast] = useState(false);
+    const [showTaskToast, setShowTaskToast] = useState(false);
+    const audioRef = useRef(null);
+
+    const notificationSound = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTSVMAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIwAXFxcXGxsbGx8fHx8jIyMjJycnJysrKysvLy8vMzMzMzc3Nzc7Ozs7Pz8/P0NDQ0NHR0dHS0tLS09PT09TU1NTV1dXV1tbW1tfX19fY2NjY2dnZ2dra2trb29vb3Nzc3N3d3d3e3t7e39/f3+Dg4ODh4eHh4iIiIiMjIyMk5OTk5aWlpaampqan5+fn6KioqKmpqamqKioKKqqqqqurq6usLCwsLS0tLS4uLi4vLy8vMHBwcHFxcXFyc/Pz9PT09PX19fX29vb29/f39/j4+Pj5+fn5+vr6+v///////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAMAAAAAAAAAASMDRFE9AAAA//MUZAAAAAI0AUA0AABHAAAARwAAACQAAAI0AUA0AABHAAAARwAAACQAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAAAGkAYA0AAA3QAAAN0AAAAkAAAGkAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAIAGkQYA0AAA3QAAAN0AAAAkAAAGkQYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAMAGkYYA0AAA3QAAAN0AAAAkAAAGkYYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAYAGkgYA0AAA3QAAAN0AAAAkAAAGkgYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAkAGkoYA0AAA3QAAAN0AAAAkAAAGkoYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZAsAGkwYA0AAA3QAAAN0AAAAkAAAGkwYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBAAGk4YA0AAA3QAAAN0AAAAkAAAGk4YA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBMAGlAYA0AAA3QAAAN0AAAAkAAAGlAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBUAGlIYA0AAA3QAAAN0AAAAkAAAGlIYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBcAGlQYA0AAA3QAAAN0AAAAkAAAGlQYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBgAGlYYA0AAA3QAAAN0AAAAkAAAGlYYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBkAGlgYA0AAA3QAAAN0AAAAkAAAGlgYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZBsAGloYA0AAA3QAAAN0AAAAkAAAGloYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCAAGlwYA0AAA3QAAAN0AAAAkAAAGlwYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCMAGmAYA0AAA3QAAAN0AAAAkAAAGmAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCUAGmIYA0AAA3QAAAN0AAAAkAAAGmIYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCcAGmQYA0AAA3QAAAN0AAAAkAAAGmQYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCeAGmYYA0AAA3QAAAN0AAAAkAAAGmYYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZCsAGmgYA0AAA3QAAAN0AAAAkAAAGmgYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDEAGmoYA0AAA3QAAAN0AAAAkAAAGmoYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDMAGmwYA0AAA3QAAAN0AAAAkAAAGmwYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDUAGnAYA0AAA3QAAAN0AAAAkAAAGnAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDcAGnIYA0AAA3QAAAN0AAAAkAAAGnIYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDgAGnQYA0AAA3QAAAN0AAAAkAAAGnQYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDkAGnYYA0AAA3QAAAN0AAAAkAAAGnYYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZDsAGngYA0AAA3QAAAN0AAAAkAAAGngYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEEAGnoYA0AAA3QAAAN0AAAAkAAAGnoYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEMAGnwYA0AAA3QAAAN0AAAAkAAAGnwYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEUAGoAYA0AAA3QAAAN0AAAAkAAAGoAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEcAGoIYA0AAA3QAAAN0AAAAkAAAGoIYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEgAGoQYA0AAA3QAAAN0AAAAkAAAGoQYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZEkAGoYYA0AAA3QAAAN0AAAAkAAAGoYYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZFsAGogYA0AAA3QAAAN0AAAAkAAAGogYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZGEAGooYA0AAA3QAAAN0AAAAkAAAGooYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZGMAGowYA0AAA3QAAAN0AAAAkAAAGowYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA//MUZGUAGpAYA0AAA3QAAAN0AAAAkAAAGpAYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA///MUZGcAGpIYA0AAA3QAAAN0AAAAkAAAGpIYA0AAA3QAAAN0AAAAkAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+    useEffect(() => {
+        const checkNotifications = async () => {
+            try {
+                // If user is not logged in or role logic prevents, endpoint returns empty or 0
+                const response = await axios.get(route('notifications.check'));
+                const { unread_chats, new_tasks } = response.data;
+
+                // 1. Unread Chat Notification
+                setUnreadCount(prev => {
+                    if (unread_chats > prev) {
+                        if (audioRef.current) audioRef.current.play().catch(e => console.log('Audio autoplay blocked', e));
+                        setShowChatToast(true);
+                        setTimeout(() => setShowChatToast(false), 5000);
+                    }
+                    return unread_chats;
+                });
+
+                // 2. New Task Notification (For Joki)
+                setNewTaskCount(prev => {
+                    if (new_tasks > prev) {
+                        if (audioRef.current) audioRef.current.play().catch(e => console.log('Audio autoplay blocked', e));
+                        setShowTaskToast(true);
+                        setTimeout(() => setShowTaskToast(false), 5000);
+                    }
+                    return new_tasks;
+                });
+
+            } catch (error) {
+                // Silent fail for unauthenticated or network issues
+                // console.error('Notification check failed', error);
+            }
+        };
+
+        // Initial check
+        checkNotifications();
+
+        // Poll every 5 seconds
+        const interval = setInterval(checkNotifications, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#F3F3F1] font-sans selection:bg-yellow-400 selection:text-black">
@@ -22,8 +70,8 @@ export default function AuthenticatedLayout({ header, children, hideNavigation =
                             <div className="flex">
                                 <div className="flex shrink-0 items-center">
                                     <Link href="/">
-                                        <div className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-1">
-                                            <span className="w-4 h-4 rounded-full bg-yellow-400 border-2 border-slate-900"></span>
+                                        <div className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
+                                            <ApplicationLogo className="w-8 h-8" />
                                             Beresin.
                                         </div>
                                     </Link>
@@ -186,6 +234,37 @@ export default function AuthenticatedLayout({ header, children, hideNavigation =
 
             <main>{children}</main>
             <Toast flash={flash} />
+            <audio ref={audioRef} src={notificationSound} preload="auto" />
+
+            {/* Chat Toast */}
+            {showChatToast && (
+                <div className="fixed bottom-5 right-5 z-50 animate-bounce-short">
+                    <Link href={user.role === 'admin' ? route('admin.chat.index') : '/'}> {/* Redirect to dashboard or specific chat page */}
+                        <div className="bg-indigo-600 text-white px-6 py-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex items-center gap-3 hover:translate-y-[-2px] transition-transform cursor-pointer">
+                            <span className="text-2xl">💬</span>
+                            <div>
+                                <p className="font-bold text-sm">New Message!</p>
+                                <p className="text-xs text-indigo-100">You have a new message.</p>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            )}
+
+            {/* Task Toast (Joki Only) */}
+            {showTaskToast && (
+                <div className="fixed bottom-24 right-5 z-50 animate-bounce-short">
+                    <div onClick={() => window.location.reload()} className="cursor-pointer"> {/* Simple reload to refresh dashboard for now, or link to tasks tab */}
+                        <div className="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex items-center gap-3 hover:translate-y-[-2px] transition-transform">
+                            <span className="text-2xl">⚡</span>
+                            <div>
+                                <p className="font-bold text-sm">New Task Assigned!</p>
+                                <p className="text-xs text-emerald-100">Check your workspace.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

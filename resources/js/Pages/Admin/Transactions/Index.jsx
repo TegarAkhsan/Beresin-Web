@@ -166,7 +166,7 @@ export default function Index({ auth, orders, services, filters }) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className="px-2 py-1 text-xs rounded-full font-semibold bg-green-100 text-green-800">
-                                                SUDAH LUNAS
+                                                LUNAS
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">

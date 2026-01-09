@@ -1,12 +1,63 @@
 import Toast from '@/Components/Toast';
 import { usePage, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import NavLink from '@/Components/NavLink';
 import Dropdown from '@/Components/Dropdown';
 
 export default function AdminLayout({ user, header, children }) {
     const { url } = usePage();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
+    const [showChatToast, setShowChatToast] = useState(false);
+    const [showOrderToast, setShowOrderToast] = useState(false);
+    const audioRef = useRef(null);
+
+    // Sound: Simple "Pop" (Base64)
+    const notificationSound = "data:audio/mpeg;base64,SUQzBAAAAAABAFRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAPAAADTGF2ZjU3LjU2LjEwMAAAAAAAAAAAAAAA//tQZAAAAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZBQA8AAANIAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJEluZm8AAAAPAAAABAAAAREAVlZXd3d3d3d3d3d3d3d3//////////////////////////////////8AAAAATGF2YzU3LjY0AAAAAAAAAAAAAAAAJAAAAAAAAAAAARAAAAAAAAAAAAAAAAD/7UGQMAAAADSAAAAAAEAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAAEQBWVld3d3d3d3d3d3d3d3f//////////////////////////////////wAAAABMYXZjNTcuNjQAAAAAAAAAAAAAAAAkAAAAAAAAAAABEFJAAgAAAAAA//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//tQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//sQZAAACQANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+
+    useEffect(() => {
+        // Init Audio
+        audioRef.current = new Audio(notificationSound);
+
+        const checkUnread = async () => {
+            try {
+                const response = await axios.get(route('notifications.check'));
+                const { unread_chats, pending_orders } = response.data;
+
+                // 1. Chat Notification
+                setUnreadCount(prev => {
+                    if (unread_chats > prev) {
+                        if (audioRef.current) audioRef.current.play().catch(e => console.log('Audio autoplay blocked', e));
+                        setShowChatToast(true);
+                        setTimeout(() => setShowChatToast(false), 5000);
+                    }
+                    return unread_chats;
+                });
+
+                // 2. Order Notification
+                setPendingOrdersCount(prev => {
+                    if (pending_orders > prev) {
+                        if (audioRef.current) audioRef.current.play().catch(e => console.log('Audio autoplay blocked', e));
+                        setShowOrderToast(true);
+                        setTimeout(() => setShowOrderToast(false), 5000);
+                    }
+                    return pending_orders;
+                });
+
+            } catch (error) {
+                console.error('Polling error', error);
+            }
+        };
+
+        // Check immediately
+        checkUnread();
+
+        // Check every 5 seconds
+        const interval = setInterval(checkUnread, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     const navigation = [
         { name: 'Dashboard', href: '/admin', active: route().current('admin.dashboard') },
@@ -14,8 +65,8 @@ export default function AdminLayout({ user, header, children }) {
         { name: 'Users', href: route('admin.users.index'), active: route().current('admin.users.*') },
         { name: 'Services', href: route('admin.services.index'), active: route().current('admin.services.*') },
         { name: 'Assign Task', href: route('admin.orders.assign'), active: route().current('admin.orders.assign') },
-        { name: 'Chats', href: route('admin.chat.index'), active: route().current('admin.chat.*') },
-        { name: 'Verify Orders', href: route('admin.orders.verify'), active: route().current('admin.orders.verify') },
+        { name: 'Chats', href: route('admin.chat.index'), active: route().current('admin.chat.*'), badge: unreadCount },
+        { name: 'Verify Orders', href: route('admin.orders.verify'), active: route().current('admin.orders.verify'), badge: pendingOrdersCount },
         { name: 'Transactions', href: route('admin.transactions.index'), active: route().current('admin.transactions.*') },
         { name: 'Settings', href: route('admin.settings.index'), active: route().current('admin.settings.*') },
     ];
@@ -23,6 +74,35 @@ export default function AdminLayout({ user, header, children }) {
     return (
         <div className="min-h-screen bg-[#F8F9FC] font-sans text-gray-900 flex">
             <Toast />
+            {/* Custom Chat Toast */}
+            {showChatToast && (
+                <div className="fixed bottom-5 right-5 z-50 animate-bounce-short">
+                    <Link href={route('admin.chat.index')}>
+                        <div className="bg-indigo-600 text-white px-6 py-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex items-center gap-3 hover:translate-y-[-2px] transition-transform cursor-pointer">
+                            <span className="text-2xl">💬</span>
+                            <div>
+                                <p className="font-bold text-sm">New Message!</p>
+                                <p className="text-xs text-indigo-100">Customer needs help.</p>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            )}
+
+            {/* Custom Order Toast */}
+            {showOrderToast && (
+                <div className="fixed bottom-24 right-5 z-50 animate-bounce-short">
+                    <Link href={route('admin.orders.verify')}>
+                        <div className="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] border-2 border-slate-900 flex items-center gap-3 hover:translate-y-[-2px] transition-transform cursor-pointer">
+                            <span className="text-2xl">⚡</span>
+                            <div>
+                                <p className="font-bold text-sm">New Order!</p>
+                                <p className="text-xs text-emerald-100">Waiting for verification.</p>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+            )}
 
             {/* Sidebar Overlay */}
             {isSidebarOpen && (
@@ -48,13 +128,20 @@ export default function AdminLayout({ user, header, children }) {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`group flex items-center px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${item.active
+                            className={`group flex items-center justify-between px-4 py-3.5 text-sm font-medium rounded-xl transition-all duration-200 ${item.active
                                 ? 'bg-indigo-50 text-indigo-600 shadow-sm'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                         >
-                            <span className={`w-1.5 h-1.5 rounded-full mr-3 ${item.active ? 'bg-indigo-600' : 'bg-gray-300 group-hover:bg-gray-400'}`}></span>
-                            {item.name}
+                            <div className="flex items-center">
+                                <span className={`w-1.5 h-1.5 rounded-full mr-3 ${item.active ? 'bg-indigo-600' : 'bg-gray-300 group-hover:bg-gray-400'}`}></span>
+                                {item.name}
+                            </div>
+                            {item.badge > 0 && (
+                                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                                    {item.badge}
+                                </span>
+                            )}
                         </Link>
                     ))}
                 </nav>
